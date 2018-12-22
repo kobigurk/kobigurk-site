@@ -6,6 +6,9 @@ body {
   font-size: 1.2em;
 }
 
-a {
+a,
+a:link,
+a:visited,
+a:hover {
   color: #777;
 }
