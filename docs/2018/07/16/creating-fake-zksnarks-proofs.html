@@ -171,7 +171,7 @@ yields A*B-C = 0.</li>
 </ol>
 
 <p>The important part happens now — the prover, while not knowing Tau, can
-calculate “in-the-exponent” H(z) evaluated at Tau — H(Tau)!</p>
+calculate “in-the-exponent” H(z) evaluated at Tau — <script type="math/tex">H(\tau)</script>!</p>
 
 <p>Why do we do that? Since by evaluating at the random point Tau, the prover shows
 with high probability that the equation H=(A*B-C)/Z holds for all z. From a
@@ -235,9 +235,9 @@ H=(A*B-C)/Z, which can only be done if the prover actually knew a solution.</p>
 was exposed during the setup process and is known to a malicious prover?</p>
 
 <p>Apparently, it’s very easy to forge a proof — since the equality check for
-H=(A<em>B-C)/Z is done is at the specific point Tau, we can use our knowledge of
+H=(A*B-C)/Z is done is at the specific point Tau, we can use our knowledge of
 Tau to create a polynomial which satisfies exactly that! That is, create a
-constant polynomial H(z), which just returns (A(Tau)</em>B(Tau)-C(Tau))/Z(Tau) all
+constant polynomial H(z), which just returns <script type="math/tex">(A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)</script> all
 the time.</p>
 
 <p>The verifier’s check will pass, and none’s the wiser!</p>

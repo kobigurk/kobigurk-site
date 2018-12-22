@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-22T18:17:09+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-22T18:24:32+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
 
 &lt;p&gt;As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
 Specifically, succinct and non-interactive ones.&lt;/p&gt;
@@ -91,7 +91,7 @@ yields A*B-C = 0.&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;The important part happens now — the prover, while not knowing Tau, can
-calculate “in-the-exponent” H(z) evaluated at Tau — H(Tau)!&lt;/p&gt;
+calculate “in-the-exponent” H(z) evaluated at Tau — &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;!&lt;/p&gt;
 
 &lt;p&gt;Why do we do that? Since by evaluating at the random point Tau, the prover shows
 with high probability that the equation H=(A*B-C)/Z holds for all z. From a
@@ -155,9 +155,9 @@ H=(A*B-C)/Z, which can only be done if the prover actually knew a solution.&lt;/
 was exposed during the setup process and is known to a malicious prover?&lt;/p&gt;
 
 &lt;p&gt;Apparently, it’s very easy to forge a proof — since the equality check for
-H=(A&lt;em&gt;B-C)/Z is done is at the specific point Tau, we can use our knowledge of
+H=(A*B-C)/Z is done is at the specific point Tau, we can use our knowledge of
 Tau to create a polynomial which satisfies exactly that! That is, create a
-constant polynomial H(z), which just returns (A(Tau)&lt;/em&gt;B(Tau)-C(Tau))/Z(Tau) all
+constant polynomial H(z), which just returns &lt;script type=&quot;math/tex&quot;&gt;(A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)&lt;/script&gt; all
 the time.&lt;/p&gt;
 
 &lt;p&gt;The verifier’s check will pass, and none’s the wiser!&lt;/p&gt;
