@@ -8,3 +8,8 @@ defaults:
       path: ""
     values:
       layout: "default"
+
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+  - jekyll-seo-tag

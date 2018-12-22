@@ -27,7 +27,14 @@
     </div>
 		<script type="text/javascript" src="/assets/js/ui.js"></script>
     {% if jekyll.environment == "production" %}
-      <script src="my-analytics-script.js"></script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=UA-76031640-1"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-76031640-1');
+      </script>
 		{% endif %}
     <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
     </script>
