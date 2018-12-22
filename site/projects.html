@@ -1,0 +1,13 @@
+---
+title: Projects
+---
+
+{% for p in site.data.projects %}
+  {% if p.link %}
+		<h3><a href="{{ p.link }}" target="_blank">{{ p.name }}</a></h3>
+{% else %}
+  <h3>{{ p.name }}</h3>
+{% endif %}
+  <p>{{ p.description }}</p>
+  <hr>
+{% endfor %}

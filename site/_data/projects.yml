@@ -1,0 +1,16 @@
+- name: EtherListen
+  link: http://etherlisten.com
+  description: Real-time transaction visualizer for ethereum.
+- name: EtherATM
+  link: https://github.com/ether-camp/ether-atm
+  description: The first Ethereum ATM.
+- name: preimage-bitcoin-lib
+  description: Node.JS implementation of Zero-Knowledge Contingent Payment.
+  link: https://github.com/kobigurk/preimage-bitcoin-lib
+- name: Hurwitz Surfaces
+  description: Quaternion models for Hurwitz surfaces, under Prof. Michael Katz.
+  link: http://u.math.biu.ac.il/~katzmik/sgtdirectory/gurkan.html
+- name: War on Ether (inactive)
+  description: Blockchain-based competitive game, similar to Core Wars.
+- name: TheDAOWisdom (inactive)
+  description: TheDAO price ticker from different exchanges. 

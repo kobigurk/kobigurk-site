@@ -1,0 +1,15 @@
+- name: "Prove-it, Blockchain-it: ZKP in Action"
+  description: Zero-Knowledge Proofs, zkSNARKs and Sudoku.
+  link: https://www.youtube.com/watch?v=bD-xTQ0_2nA
+- name: Bitcoin Mathematics
+  description: Overview of Bitcoin, elliptic curves and double spend;
+  link: https://drive.google.com/open?id=0B-EU9txb0XfwdC1EN3VPcjY5X0E
+- name: Bitcoin Scripts using Node.JS
+  description: Learn the Bitcoin scripting language and how to interpret, craft and test Bitcoin scripts using Node.JS.
+  link: https://drive.google.com/open?id=0B-EU9txb0XfwYkE1eFFVLW1tLU0
+- name: Ethereum install fest
+  description: Install fest & introduction for a meetup.
+  link: https://drive.google.com/open?id=1vBViqLBR0bD3hOY_SgQUwMFj9Nq8eCgggCmlx6_Tz04
+- name: Ethereum introduction
+  description: High level introduction for Ethereum
+  link: https://drive.google.com/open?id=13RVICEI9--3hWr8Q1f4Pnj9j_izSjv0HS5Lu8iByUMA
