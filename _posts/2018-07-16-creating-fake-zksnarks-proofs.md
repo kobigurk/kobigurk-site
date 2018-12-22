@@ -74,7 +74,7 @@ Tau known to the prover — it’s very easy to forge a proof!
 Let’s take a quick look at the construction presented in
 [BCTV14a](http://eprint.iacr.org/2013/879){:target="_blank"}:
 
-![](https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png)
+![](https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png){:style="width: 100%"}
 
 It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:
 
