@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Creating fake zkSNARK proofs</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+		<link rel="stylesheet" href="/assets/css/side-menu.css">
+		<link rel="stylesheet" href="/assets/css/styles.css">
+    <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/_site/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Creating fake zkSNARK proofs</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Creating fake zkSNARK proofs" />
+<meta name="author" content="Kobi" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?" />
+<meta property="og:description" content="As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?" />
+<link rel="canonical" href="http://localhost:4000/_site/2018/07/16/creating-fake-zksnarks-proofs.html" />
+<meta property="og:url" content="http://localhost:4000/_site/2018/07/16/creating-fake-zksnarks-proofs.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-07-16T00:00:00+03:00" />
+<script type="application/ld+json">
+{"description":"As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?","author":{"@type":"Person","name":"Kobi"},"@type":"BlogPosting","url":"http://localhost:4000/_site/2018/07/16/creating-fake-zksnarks-proofs.html","headline":"Creating fake zkSNARK proofs","dateModified":"2018-07-16T00:00:00+03:00","datePublished":"2018-07-16T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/_site/2018/07/16/creating-fake-zksnarks-proofs.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet"
+				href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css">
+
+  </head>
+  <body>
+    <div id="layout">
+			<a href="#menu" id="menuLink" class="menu-link"><span></span></a>
+
+<div id="menu">
+	<div class="pure-menu">
+		<a class="pure-menu-heading" href="#">Kobi Gurkan</a>
+		<ul class="pure-menu-list">
+			
+			<li class="pure-menu-item">
+        <a href="/" class="pure-menu-link" ">Home</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/blog.html" class="pure-menu-link" ">Blog</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/projects.html" class="pure-menu-link" ">Projects</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/presentations.html" class="pure-menu-link" ">Presentations</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/contact.html" class="pure-menu-link" ">Contact</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/pgp.html" class="pure-menu-link" ">PGP key</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://github.com/kobigurk" class="pure-menu-link" target="_blank"">GitHub</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://twitter.com/kobigurk" class="pure-menu-link" target="_blank"">Twitter</a>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+
+			<div id="main">
+				<div class="header">
+					<h3>Creating fake zkSNARK proofs</h3>
+				</div>
+				<div class="content">
+					<p>16 Jul 2018 - Kobi</p>
+
+<h1 id="creating-fake-zksnark-proofs">Creating fake zkSNARK proofs</h1>
+
+<p>As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
+Specifically, succinct and non-interactive ones.</p>
+
+<p>Explaining what they are exactly is a bit too much for this post, so I refer you
+to the following:</p>
+
+<ol>
+  <li><a href="https://z.cash/technology/zksnarks.html" target="_blank">How zkSNARKs are constructed in </a>
+— by the Zcash team.</li>
+  <li><a href="https://qed-it.com/2017/06/08/trustless-computing/" target="_blank">Trustless Computing on Private
+Data</a> — blog post by
+QED‐it’s lead cryptographer Daniel Benarroch and Prof. Aviv Zohar.</li>
+  <li><a href="https://qed-it.com/2017/07/04/zkp-in-action/" target="_blank">Prove-it, Blockchain-it: ZKP in
+Action</a> — a video of a meetup
+explaining ZKPs and how to create one for Sudoku.</li>
+  <li><a href="https://qed-it.com/2017/12/20/the-incredible-machine/" target="_blank">The Incredible Machine</a>
+— blog post by QED‐it’s Chief Scientist Prof. Aviv Zohar, explaining trusted
+setup.</li>
+  <li><a href="https://qed-it.com/2017/07/11/the-hunting-of-the-snark/" target="_blank">The Hunting of the
+SNARK</a> — a series of
+riddles to experiment with ZKPs.</li>
+</ol>
+
+<p>In QED-it we use zkSNARKs, among other tools, to create Zero-Knowledge
+Blockchains for the enterprise.</p>
+
+<p>The production deployment of zkSNARKs that is most known is probably
+<a href="http://z.cash/" target="_blank">Zcash</a> — a cryptocurrency with unlinkable transactions and
+hidden amounts. Zcash, and some others utilizing zkSNARKs, are based on a
+construction called <a href="https://eprint.iacr.org/2013/279" target="_blank">Pinnochio</a>, although more
+specifically <a href="http://eprint.iacr.org/2013/879" target="_blank">BCTV14a</a>.</p>
+
+<p>This is a marvelous technology, and as you might suspect, nothing is for free!
+There’s a notable downside to this construction — the “trusted setup”.</p>
+
+<h3 id="trusted-setup">Trusted Setup</h3>
+
+<p>The setup is a process where the CRS (Common Reference String) is generated, or
+more publicly known as the pair of proving and verification keys. These “keys”
+are used by the prover and verifer to generate and verify proofs for a specific
+problem (or constraint system), respectively.</p>
+
+<p>In this process, there are random elements which are sampled and must be kept
+secret — if the prover knows them, they will be able to create proofs which are
+verified successfully, without using an actual solution to the problem during
+the proving process. In other words, to forge proofs and break soundness. This
+randomness is also known as “toxic waste”.</p>
+
+<p>There are ways to avoid this worry and not put trust in a single entity. For
+public circuits, these usually involve a Multi-Party Computation — a process in
+which multiple players donate their own randomness, which they destroy
+afterwards. The interesting fact is that it’s enough that one player is honest
+and destroys their randomness for the whole process to be secure.</p>
+
+<p>Some notable examples of using MPCs to do trusted setup are again, by Zcash:</p>
+
+<ol>
+  <li><a href="https://www.wnycstudios.org/story/ceremony/" target="_blank">“The Ceremony” podcast</a></li>
+  <li><a href="https://z.cash.foundation/blog/powers-of-tau/" target="_blank">Powers of Tau</a></li>
+</ol>
+
+<p>You might notice this “Tau” that popped up there…</p>
+
+<p>Not to insult any random element — Tau is very important to be kept secret With
+Tau known to the prover — it’s very easy to forge a proof!</p>
+
+<h3 id="creating-a-proof">Creating a proof</h3>
+
+<p>Let’s take a quick look at the construction presented in
+<a href="http://eprint.iacr.org/2013/879" target="_blank">BCTV14a</a>:</p>
+
+<p><img src="https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png" alt="" /></p>
+
+<p>It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:</p>
+
+<ol>
+  <li>Tau is a point in a finite field sampled at random, part of the “toxic waste”,
+during the setup process.</li>
+  <li>The prover, during the proving process, calculates some polynomials — A(z),B(z)
+and C(z), which are derived from the constraint system and the public and
+private inputs to the solution. Essentially, these polynomials represent
+constraints of the form “a<em>b=c”, or equivalently “a</em>b-c=0”.</li>
+  <li>The prover also calculates H(z) = (A(z)B(z)-C(z))/Z(z), where Z(z) is a publicly
+known polynomial which zeros at the points representing the constraint system.
+Take note that since A,B and C take the inputs of the prover into account, H can
+only be calculated when the numerator also zeros at the same points — attesting
+to the fact the prover actually knows a solution to the problem, that which
+yields A*B-C = 0.</li>
+</ol>
+
+<p>The important part happens now — the prover, while not knowing Tau, can
+calculate “in-the-exponent” H(z) evaluated at Tau — H(Tau)!</p>
+
+<p>Why do we do that? Since by evaluating at the random point Tau, the prover shows
+with high probability that the equation H=(A*B-C)/Z holds for all z. From a
+different perspective on the same matter, without knowing Tau, the prover, with
+high probability, will not be able to produce a polynomial which receives the
+exact same value at that point.</p>
+
+<p>How can we technically do that? By the fact that part of the setup process
+generated elements containing all the relevant powers of Tau, hidden in the
+exponent, given as pk_Hi. If we have the coefficients of H, we can combine these
+and create <script type="math/tex">H(\tau)</script>.</p>
+
+<p>More specifically:</p>
+
+<table class="centeredimg">
+  <thead>
+    <tr>
+      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/800/1*GF6Dl1SG775X5jMQM7mBJw.gif" alt="" /></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">Calculated H(z) by the prover</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="centeredimg">
+  <thead>
+    <tr>
+      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/1000/1*i554Rzu3zkesrkaxwzMnSw.gif" alt="" /></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">Taken from the proving key, calculated in the setup process</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="centeredimg">
+  <thead>
+    <tr>
+      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/1000/1*QOOWLUY60c2gyhOFkRLlMg.gif" alt="" /></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">Evaluating <script type="math/tex">H(\tau)</script> “in-the-exponent”</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The verifier, upon receiving the proof, can check, again in-the-exponent, that
+the prover indeed provided coefficients for H which satisfy the relation
+H=(A*B-C)/Z, which can only be done if the prover actually knew a solution.</p>
+
+<h3 id="forging-a-proof">Forging a proof</h3>
+
+<p>Now let’s have some fun… What happens if Tau is known? If, by some reason, it
+was exposed during the setup process and is known to a malicious prover?</p>
+
+<p>Apparently, it’s very easy to forge a proof — since the equality check for
+H=(A<em>B-C)/Z is done is at the specific point Tau, we can use our knowledge of
+Tau to create a polynomial which satisfies exactly that! That is, create a
+constant polynomial H(z), which just returns (A(Tau)</em>B(Tau)-C(Tau))/Z(Tau) all
+the time.</p>
+
+<p>The verifier’s check will pass, and none’s the wiser!</p>
+
+<h3 id="sounds-hard">Sounds hard…</h3>
+
+<p>Not at all — you’re more than welcome to check <a href="https://github.com/QED-it/libsnark-tutorial_forge_proof" target="_blank">this proof-of-concept
+code</a>, based on Howard
+Wu’s <a href="https://github.com/howardwu/libsnark-tutorial" target="_blank">libsnark-tutorial</a>, and see
+for yourself the changes made to the code:</p>
+
+<ol>
+  <li>The program sets up a circuit for bit-decomposition — although it c.</li>
+  <li>The setup process maliciously saves Tau to disk.</li>
+  <li>The prover loads Tau from disk, and uses wrong inputs to the proof. The prover,
+knowing Tau, generates the constant polynomial, disregarding the inputs.</li>
+  <li>The verifier then verifies the proof successfully — bamboozled!</li>
+</ol>
+
+<h3 id="conclusions">Conclusions</h3>
+
+<p>I hope this post provided some insight into what is this “toxic waste” that
+everyone has been talking about regarding zkSNARKs, and why having it exposed
+leads to an easily executable attack vector.</p>
+
+<p>Hey — want to work on zkSNARKs and distributed systems? We are
+<a href="https://qed-it.com/jobs/" target="_blank">hiring</a>!</p>
+
+
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://EXAMPLE.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                            
+
+
+				</div>
+			</div>
+    </div>
+		<script type="text/javascript" src="/assets/js/ui.js"></script>
+    
+    <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js"></script>
+		<script src="/assets/js/solidity.js"></script>
+    <script type="text/javascript">
+      hljs.registerLanguage('solidity', window.hljsDefineSolidity);
+      hljs.initHighlightingOnLoad();
+    </script>
+    <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="89b86248-82d0-4a4a-8fd3-59a0088b1ffa";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+  </body>
+</html>
