@@ -2,6 +2,7 @@
 title: Creating fake zkSNARK proofs
 author: Kobi
 excerpt:  As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?
+comments: true
 ---
 
 # Creating fake zkSNARK proofs

@@ -1,6 +1,7 @@
 ---
 title: Social engineering 101
 author: Kobi
+comments: true
 ---
 Last Thursday we had our demo day in Boost.VC tribe 7. Excitement, adrenaline and expectations are high - the meetings we're going to have now, the connections that will assist us in building the companies we are dreaming of.
 

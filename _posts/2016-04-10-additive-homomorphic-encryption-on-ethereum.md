@@ -1,6 +1,7 @@
 ---
 title: Additive Homomorphic Encryption on Ethereum
 author: Kobi
+comments: true
 ---
 A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.
 

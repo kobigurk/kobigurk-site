@@ -1,6 +1,7 @@
 ---
 title: Phishing in the age of preview
 author: Kobi
+comments: true
 ---
 Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it's important or interesting enough to open it in a browser.
 

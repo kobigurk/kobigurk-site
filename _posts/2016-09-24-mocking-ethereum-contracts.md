@@ -1,6 +1,7 @@
 ---
 title: Mocking Ethereum contracts
 author: Kobi
+comments: true
 ---
 Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don't have the dependency ready, i.e. when someone else develops it and haven't finished.
 

@@ -2,12 +2,17 @@
 title: Zero-Knowledge taxation on Ethereum
 author: Kobi
 excerpt_separator: <!--more-->
+comments: true
 ---
 At QED&#8208;it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we've worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more.
 
 We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED&#8208;it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case &mdash; new french tax rules presented in 2018.
 
 <!--more-->
+
+Watch the talk by Jonathan Rouach, our CEO, at ZCon0:
+{% youtube "https://www.youtube.com/watch?v=OTO4JCJZD2o" %}
+
 # Use-case
 
 It is common for a person to purchase a life insurance contract from an insurer. The person then performs deposits to this contract. In "investment-type" contracts, these deposits are invested by the insurer in different investment vehicles, possibly earning gains.
@@ -50,7 +55,7 @@ Why is it called an SDK? Well, the SDK allows developers to write "hooks" - thei
 
 Let's start with a diagram describing the system:
 
-![System diagram](/content/images/2018/06/photo_2018-06-25_12-43-53.jpg)
+![System diagram](/assets/images/zkpqed1.jpeg){:style="width: 100%"}
 
 User, Insurer 1 and Insurer 2 are QED&#8208;it nodes. The nodes give the ability to publish commitments about bits of data and generate ZKPs in response to audit questions.
 
@@ -112,11 +117,11 @@ The nodes are easily deployable using Docker and are exposing an HTTP API to be 
 Along with its node, comes QED-it's explorer tool, that realizes our vision of a ZKP monitoring system and allows operators of nodes to monitor the activity of their nodes, just like a block explorer allows one to monitor a blockchain. This is how the process looks like there:
 
 * Data report by an insurer:
-![Data report](/content/images/2018/06/Screenshot-from-2018-06-23-00-57-20.png)
+![Data report](/assets/images/zkpqed2.png){:style="width: 100%"}
 * Commitment publish by an insurer:
-![Commitment publish](/content/images/2018/06/Screenshot-from-2018-06-23-00-57-38.png)
+![Commitment publish](/assets/images/zkpqed3.png){:style="width: 100%"}
 * Tax calculation result:
-![Audit](/content/images/2018/06/Screenshot-from-2018-06-24-16-09-46.png)
+![Audit](/assets/images/zkpqed4.png){:style="width: 100%"}
 
 ## Challenges
 

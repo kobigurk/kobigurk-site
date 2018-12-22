@@ -2,6 +2,7 @@
 title: Cryptocurrency recovery (or "What the BIP is all of this?")
 author: Kobi
 excerpt: Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it's not always easy to recover.
+comments: true
 ---
 # Overview
 ## TL; DR
