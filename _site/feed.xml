@@ -1,0 +1,1101 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2018-12-22T17:07:33+02:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="http://localhost:4000/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>http://localhost:4000/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="http://localhost:4000/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
+
+&lt;p&gt;As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
+Specifically, succinct and non-interactive ones.&lt;/p&gt;
+
+&lt;p&gt;Explaining what they are exactly is a bit too much for this post, so I refer you
+to the following:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://z.cash/technology/zksnarks.html&quot; target=&quot;_blank&quot;&gt;How zkSNARKs are constructed in &lt;/a&gt;
+— by the Zcash team.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/06/08/trustless-computing/&quot; target=&quot;_blank&quot;&gt;Trustless Computing on Private
+Data&lt;/a&gt; — blog post by
+QED‐it’s lead cryptographer Daniel Benarroch and Prof. Aviv Zohar.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/07/04/zkp-in-action/&quot; target=&quot;_blank&quot;&gt;Prove-it, Blockchain-it: ZKP in
+Action&lt;/a&gt; — a video of a meetup
+explaining ZKPs and how to create one for Sudoku.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/12/20/the-incredible-machine/&quot; target=&quot;_blank&quot;&gt;The Incredible Machine&lt;/a&gt;
+— blog post by QED‐it’s Chief Scientist Prof. Aviv Zohar, explaining trusted
+setup.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/07/11/the-hunting-of-the-snark/&quot; target=&quot;_blank&quot;&gt;The Hunting of the
+SNARK&lt;/a&gt; — a series of
+riddles to experiment with ZKPs.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In QED-it we use zkSNARKs, among other tools, to create Zero-Knowledge
+Blockchains for the enterprise.&lt;/p&gt;
+
+&lt;p&gt;The production deployment of zkSNARKs that is most known is probably
+&lt;a href=&quot;http://z.cash/&quot; target=&quot;_blank&quot;&gt;Zcash&lt;/a&gt; — a cryptocurrency with unlinkable transactions and
+hidden amounts. Zcash, and some others utilizing zkSNARKs, are based on a
+construction called &lt;a href=&quot;https://eprint.iacr.org/2013/279&quot; target=&quot;_blank&quot;&gt;Pinnochio&lt;/a&gt;, although more
+specifically &lt;a href=&quot;http://eprint.iacr.org/2013/879&quot; target=&quot;_blank&quot;&gt;BCTV14a&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This is a marvelous technology, and as you might suspect, nothing is for free!
+There’s a notable downside to this construction — the “trusted setup”.&lt;/p&gt;
+
+&lt;h3 id=&quot;trusted-setup&quot;&gt;Trusted Setup&lt;/h3&gt;
+
+&lt;p&gt;The setup is a process where the CRS (Common Reference String) is generated, or
+more publicly known as the pair of proving and verification keys. These “keys”
+are used by the prover and verifer to generate and verify proofs for a specific
+problem (or constraint system), respectively.&lt;/p&gt;
+
+&lt;p&gt;In this process, there are random elements which are sampled and must be kept
+secret — if the prover knows them, they will be able to create proofs which are
+verified successfully, without using an actual solution to the problem during
+the proving process. In other words, to forge proofs and break soundness. This
+randomness is also known as “toxic waste”.&lt;/p&gt;
+
+&lt;p&gt;There are ways to avoid this worry and not put trust in a single entity. For
+public circuits, these usually involve a Multi-Party Computation — a process in
+which multiple players donate their own randomness, which they destroy
+afterwards. The interesting fact is that it’s enough that one player is honest
+and destroys their randomness for the whole process to be secure.&lt;/p&gt;
+
+&lt;p&gt;Some notable examples of using MPCs to do trusted setup are again, by Zcash:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.wnycstudios.org/story/ceremony/&quot; target=&quot;_blank&quot;&gt;“The Ceremony” podcast&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://z.cash.foundation/blog/powers-of-tau/&quot; target=&quot;_blank&quot;&gt;Powers of Tau&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;You might notice this “Tau” that popped up there…&lt;/p&gt;
+
+&lt;p&gt;Not to insult any random element — Tau is very important to be kept secret With
+Tau known to the prover — it’s very easy to forge a proof!&lt;/p&gt;
+
+&lt;h3 id=&quot;creating-a-proof&quot;&gt;Creating a proof&lt;/h3&gt;
+
+&lt;p&gt;Let’s take a quick look at the construction presented in
+&lt;a href=&quot;http://eprint.iacr.org/2013/879&quot; target=&quot;_blank&quot;&gt;BCTV14a&lt;/a&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Tau is a point in a finite field sampled at random, part of the “toxic waste”,
+during the setup process.&lt;/li&gt;
+  &lt;li&gt;The prover, during the proving process, calculates some polynomials — A(z),B(z)
+and C(z), which are derived from the constraint system and the public and
+private inputs to the solution. Essentially, these polynomials represent
+constraints of the form “a&lt;em&gt;b=c”, or equivalently “a&lt;/em&gt;b-c=0”.&lt;/li&gt;
+  &lt;li&gt;The prover also calculates H(z) = (A(z)B(z)-C(z))/Z(z), where Z(z) is a publicly
+known polynomial which zeros at the points representing the constraint system.
+Take note that since A,B and C take the inputs of the prover into account, H can
+only be calculated when the numerator also zeros at the same points — attesting
+to the fact the prover actually knows a solution to the problem, that which
+yields A*B-C = 0.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The important part happens now — the prover, while not knowing Tau, can
+calculate “in-the-exponent” H(z) evaluated at Tau — H(Tau)!&lt;/p&gt;
+
+&lt;p&gt;Why do we do that? Since by evaluating at the random point Tau, the prover shows
+with high probability that the equation H=(A*B-C)/Z holds for all z. From a
+different perspective on the same matter, without knowing Tau, the prover, with
+high probability, will not be able to produce a polynomial which receives the
+exact same value at that point.&lt;/p&gt;
+
+&lt;p&gt;How can we technically do that? By the fact that part of the setup process
+generated elements containing all the relevant powers of Tau, hidden in the
+exponent, given as pk_Hi. If we have the coefficients of H, we can combine these
+and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;More specifically:&lt;/p&gt;
+
+&lt;table class=&quot;centeredimg&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/800/1*GF6Dl1SG775X5jMQM7mBJw.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Calculated H(z) by the prover&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;table class=&quot;centeredimg&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/1000/1*i554Rzu3zkesrkaxwzMnSw.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Taken from the proving key, calculated in the setup process&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;table class=&quot;centeredimg&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/1000/1*QOOWLUY60c2gyhOFkRLlMg.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Evaluating &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt; “in-the-exponent”&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;The verifier, upon receiving the proof, can check, again in-the-exponent, that
+the prover indeed provided coefficients for H which satisfy the relation
+H=(A*B-C)/Z, which can only be done if the prover actually knew a solution.&lt;/p&gt;
+
+&lt;h3 id=&quot;forging-a-proof&quot;&gt;Forging a proof&lt;/h3&gt;
+
+&lt;p&gt;Now let’s have some fun… What happens if Tau is known? If, by some reason, it
+was exposed during the setup process and is known to a malicious prover?&lt;/p&gt;
+
+&lt;p&gt;Apparently, it’s very easy to forge a proof — since the equality check for
+H=(A&lt;em&gt;B-C)/Z is done is at the specific point Tau, we can use our knowledge of
+Tau to create a polynomial which satisfies exactly that! That is, create a
+constant polynomial H(z), which just returns (A(Tau)&lt;/em&gt;B(Tau)-C(Tau))/Z(Tau) all
+the time.&lt;/p&gt;
+
+&lt;p&gt;The verifier’s check will pass, and none’s the wiser!&lt;/p&gt;
+
+&lt;h3 id=&quot;sounds-hard&quot;&gt;Sounds hard…&lt;/h3&gt;
+
+&lt;p&gt;Not at all — you’re more than welcome to check &lt;a href=&quot;https://github.com/QED-it/libsnark-tutorial_forge_proof&quot; target=&quot;_blank&quot;&gt;this proof-of-concept
+code&lt;/a&gt;, based on Howard
+Wu’s &lt;a href=&quot;https://github.com/howardwu/libsnark-tutorial&quot; target=&quot;_blank&quot;&gt;libsnark-tutorial&lt;/a&gt;, and see
+for yourself the changes made to the code:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The program sets up a circuit for bit-decomposition — although it c.&lt;/li&gt;
+  &lt;li&gt;The setup process maliciously saves Tau to disk.&lt;/li&gt;
+  &lt;li&gt;The prover loads Tau from disk, and uses wrong inputs to the proof. The prover,
+knowing Tau, generates the constant polynomial, disregarding the inputs.&lt;/li&gt;
+  &lt;li&gt;The verifier then verifies the proof successfully — bamboozled!&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;conclusions&quot;&gt;Conclusions&lt;/h3&gt;
+
+&lt;p&gt;I hope this post provided some insight into what is this “toxic waste” that
+everyone has been talking about regarding zkSNARKs, and why having it exposed
+leads to an easily executable attack vector.&lt;/p&gt;
+
+&lt;p&gt;Hey — want to work on zkSNARKs and distributed systems? We are
+&lt;a href=&quot;https://qed-it.com/jobs/&quot; target=&quot;_blank&quot;&gt;hiring&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?</summary></entry><entry><title type="html">Zero-Knowledge taxation on Ethereum</title><link href="http://localhost:4000/2018/06/24/zkp-qed-ethereum.html" rel="alternate" type="text/html" title="Zero-Knowledge taxation on Ethereum" /><published>2018-06-24T00:00:00+03:00</published><updated>2018-06-24T00:00:00+03:00</updated><id>http://localhost:4000/2018/06/24/zkp-qed-ethereum</id><content type="html" xml:base="http://localhost:4000/2018/06/24/zkp-qed-ethereum.html">&lt;p&gt;At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more.&lt;/p&gt;
+
+&lt;p&gt;We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;p&gt;Watch the talk by Jonathan Rouach, our CEO, at ZCon0:&lt;/p&gt;
+&lt;style&gt;.embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; } .embed-container iframe, .embed-container object, .embed-container embed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }&lt;/style&gt;
+&lt;div class=&quot;embed-container&quot;&gt;    &lt;iframe title=&quot;YouTube video player&quot; width=&quot;640&quot; height=&quot;390&quot; src=&quot;//www.youtube.com/embed/OTO4JCJZD2o&quot; frameborder=&quot;0&quot; allowfullscreen=&quot;&quot;&gt;&lt;/iframe&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;use-case&quot;&gt;Use-case&lt;/h1&gt;
+
+&lt;p&gt;It is common for a person to purchase a life insurance contract from an insurer. The person then performs deposits to this contract. In “investment-type” contracts, these deposits are invested by the insurer in different investment vehicles, possibly earning gains.&lt;/p&gt;
+
+&lt;p&gt;At some point, the person would like to withdraw their money from the insurer. The question arises - how should these gains be taxed, before paying to the person?&lt;/p&gt;
+
+&lt;p&gt;This is where a friction point arises - the new 2018 french tax law binds the calculation of the tax to the &lt;em&gt;accumulated value&lt;/em&gt; of all life insurance contracts held by the beneficiary.&lt;/p&gt;
+
+&lt;p&gt;When the person has contracts with a single insurer, then, naturally, all the data relevant for calculating the tax is held by this insurer. Since it is also possible for a person to purchase life insurance contracts from multiple insurers, a person might not want to expose this highly personal data to the insurer the person is withdrawing from.&lt;/p&gt;
+
+&lt;p&gt;What if we had a system, allowing a person to use all of the life insurance contracts from their insurers, and calculate the tax the insurer should pay, without leaking information about other contracts at other insurers?&lt;/p&gt;
+
+&lt;h1 id=&quot;zero-knowledge-proofs&quot;&gt;Zero-knowledge proofs&lt;/h1&gt;
+
+&lt;p&gt;Zero-knowledge proofs (ZKPs) allow a verifier to pose a question to a prover, and the prover answers this question, using whatever private data needed to answer it, revealing nothing more than the answer to the question itself.&lt;/p&gt;
+
+&lt;p&gt;An example of a question a verifier could pose is “do you know the solution to the following Sudoku puzzle?”. Obviously, the prover who knows the solution can show the solution itself. This prover, though, would like to keep the solution secret for now, but convince the verifier that they do know the solution. The prover can use a zero-knowledge proof to just answer “yes”! The cryptographic proof also serves for convincing the verifier that the right question was used on the right data and no one altered the result.&lt;/p&gt;
+
+&lt;p&gt;zkSNARKs are, amongst other properties, a way to do this process:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;em&gt;Non-interactively&lt;/em&gt; - without a direct interaction between the prover and the verifier.&lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;Succinctly&lt;/em&gt; - the proofs are very small.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Explaining zero-knowledge proofs in depth is beyond the scope of this post, and if you wish to know more, I invite you to check out the following resources:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/06/08/trustless-computing/&quot;&gt;Trustless Computing on Private Data&lt;/a&gt; - blog post by QED‐it’s lead cryptographer Daniel Benarroch and Prof. Aviv Zohar.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/07/04/zkp-in-action/&quot;&gt;Prove-it, Blockchain-it: ZKP in Action&lt;/a&gt; - a video of a meetup explaining ZKPs and how to create one for Sudoku.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/12/20/the-incredible-machine/&quot;&gt;The Incredible Machine&lt;/a&gt; - blog post by QED‐it’s Chief Scientist Prof. Aviv Zohar, explaining trusted setup.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://qed-it.com/2017/07/11/the-hunting-of-the-snark/&quot;&gt;The Hunting of the SNARK&lt;/a&gt; - a series of riddles to experiment with ZKPs.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;the-project&quot;&gt;The project&lt;/h1&gt;
+
+&lt;h2 id=&quot;qed-it-sdk&quot;&gt;QED-it SDK&lt;/h2&gt;
+&lt;p&gt;At the heart of the QED‐it SDK is an &lt;em&gt;identity&lt;/em&gt; protocol. This protocol serves as a framework for committing to data by issuers, attesting pieces of data about a user, and allowing an auditor to pose audit questions to this user. The user, in turn, generates a zero-knowledge proof that combines the data inputs and uses a computation on them to answer the audit question.&lt;/p&gt;
+
+&lt;p&gt;The QED‐it SDK provides this protocol adapted to families of use-cases, especially the ones discussed and deemed important in the recent &lt;a href=&quot;https://zkproof.org&quot;&gt;Zero Knowledge Proof Standardization&lt;/a&gt; workshop. The adaptations includes a set of building blocks for each of these families, allowing an auditor to pose increasingly complex audit questions.&lt;/p&gt;
+
+&lt;p&gt;Why is it called an SDK? Well, the SDK allows developers to write “hooks” - their own audit questions using a Domain-Specific Language. The encompassing protocols provide the security guarantees required by most of the use-cases.&lt;/p&gt;
+
+&lt;h2 id=&quot;high-level-design&quot;&gt;High-level design&lt;/h2&gt;
+
+&lt;p&gt;Let’s start with a diagram describing the system:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/zkpqed1.jpeg&quot; alt=&quot;System diagram&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;User, Insurer 1 and Insurer 2 are QED‐it nodes. The nodes give the ability to publish commitments about bits of data and generate ZKPs in response to audit questions.&lt;/p&gt;
+
+&lt;p&gt;Step-by-step (using the numbering of the diagram), this is how a possible system communication scenario looks like:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Insurer 1 sends the life insurance contract to the user, attesting to the contract between them.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Insurer 1 publishes commitments, in the form of hashes, of the contract. These are small values not exposing any information about the contract itself.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;(This covers 3-8). The commitments are propagated throughout the network. Additionally, Insurer 2 does the same publishing steps as Insurer 1.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The user requests to leave Insurer 2. The insurer has to pay the gains to the user, minus the taxes owed for them. In order to know the tax amounts, the insurer poses an audit question to the user - “given your life insurance contracts at all of your insurers, what is the tax amount that should be paid for the gains for the deposits you made to us?”&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The user collects all their life insurance contracts, and generates a zero-knowledge proof of the calculated tax amounts.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;After receiving the ZKP, Insurer 2 pays the user, minus the taxes on the gains according to the law, all this without knowing any details about the other life insurance contracts the user holds! (Except, of course, what can be inferred from the audit question itself)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I’d like to highlight an important fact which may not be obvious - throughout this process, the data, once collected by the user, never left the user’s node! Still, the user can calculate by themselves the tax rates, with the insurer being certain that the result is correct.&lt;/p&gt;
+
+&lt;p&gt;In a centralized world, in order for the insurers to comply with the law, they must have more information, and so the user usually provides it to them. In the QED-it world, it’s not like that anymore! The users perform the math on their own machines, and they just need the right infrastructure to support this - users running QED-it nodes to generate ZKPs and insurers committing data and verifying proofs.&lt;/p&gt;
+
+&lt;h2 id=&quot;modularization-and-domain-specific-language-dsl&quot;&gt;Modularization and Domain-Specific Language (DSL)&lt;/h2&gt;
+
+&lt;p&gt;QED‐it’s SDK allows users to write their “business-logic” proofs both in our embedded DSL and and other external DSLs - languages for the domain of Zero-Knowledge Proofs.&lt;/p&gt;
+
+&lt;p&gt;The main requirement for this integration is that the proofs conform to the &lt;em&gt;proof-chaining&lt;/em&gt; specification. Proof-chaining is a technique we’ve implemented that allows a prover to connect different proofs parts, even between different proof systems. This allows the DSL proofs to be connected  with the other parts of the QED‐it’s proofs and protocol.&lt;/p&gt;
+
+&lt;p&gt;A bit more in-depth, the proof in this use-case is modularized to multiple proofs, “glued” together:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;em&gt;Data validity proofs.&lt;/em&gt; These promise:
+    &lt;ol&gt;
+      &lt;li&gt;The data has been published before by one of the approved parties, and existed by block X, referenced by a “merkle root” of the merkle tree generated by all the published commitments.&lt;/li&gt;
+      &lt;li&gt;The data has not been revoked by block Y.&lt;/li&gt;
+      &lt;li&gt;The subset of the data that will be chained to the next proof has been generated correctly, referenced by a hiding commitment to it.&lt;/li&gt;
+    &lt;/ol&gt;
+
+    &lt;p&gt;As you may notice, we’ve introduced a new concept here, a Merkle tree. Specifically, the commitments in the system are collected in an append-only Merkle tree - a data structure that has efficient proofs for “set membership” -given a set S and an element x, you can efficiently show x is an element in the set S.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;Tax proof.&lt;/em&gt; This is the proof containing the specific business logic of the proof, which in this case means the calculation of the tax amounts. This proof assumes the data inputs have been validated by other proofs. This assumption causes this proof to be very small and efficient!&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The different proof components are connected by what we call a glue.&lt;/p&gt;
+
+&lt;p&gt;The verification protocol then, in addition to verifying that the merkle roots existed in the past, includes verification of the “glue” components between the different proofs.&lt;/p&gt;
+
+&lt;p&gt;The calculation of tax amounts in the &lt;em&gt;Tax Proof&lt;/em&gt; has been written by Alizée Faytre, who has been the developer in Deloitte working on the project under the supervision of Ossama Benbouidda and Julien Maldonato, using &lt;a href=&quot;https://github.com/JacobEberhardt/ZoKrates&quot;&gt;ZoKrates&lt;/a&gt; — a Python-like high level language that compiles into zkSNARKs.&lt;/p&gt;
+
+&lt;h2 id=&quot;external-verifiers&quot;&gt;External verifiers&lt;/h2&gt;
+
+&lt;p&gt;An important part of this project was allowing an external party who is not running a QED‐it node to enjoy the results of the zero-knowledge proof generated by the user’s QED‐it node.&lt;/p&gt;
+
+&lt;p&gt;To do that, we chose to deeply integrate with an Ethereum network, which, since the &lt;a href=&quot;https://blog.ethereum.org/2017/10/12/byzantium-hf-announcement/&quot;&gt;Byzantium hard-fork&lt;/a&gt;, allowing zkSNARKs proofs verification by providing precompiles for efficient evaluation of elliptic curve operations on the BN128 curve. In short, this means that we can generate proofs using a QED-it node and verify them in a decentralized manner on the Ethereum blockchain.&lt;/p&gt;
+
+&lt;p&gt;We implemented a smart contract that essentially acts as an autonomous verifier. This smart contract allows the different parties to publish commitments that will be collected in an incremental merkle tree, and run the verification protocol on the bundle of proofs generated by the user.&lt;/p&gt;
+
+&lt;p&gt;This allows, for example, for a smart contract managing the wallet of the insurer, to consume the tax proofs, pay the taxes to the government and pay the user minus the tax. This coincides with our vision of real-time regulation compliance.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-system-in-action&quot;&gt;The system in action&lt;/h2&gt;
+
+&lt;p&gt;We deployed the system comprising a set of 6 nodes - 5 insurers and 1 user, running a Proof-of-Authority Ethereum network. These parties run QED‐it nodes and have the ability to generate these proofs, using our own efficient data validity proofs and to generate the tax proof using ZoKrates.&lt;/p&gt;
+
+&lt;p&gt;The nodes are easily deployable using Docker and are exposing an HTTP API to be easily integrated with.&lt;/p&gt;
+
+&lt;p&gt;Along with its node, comes QED-it’s explorer tool, that realizes our vision of a ZKP monitoring system and allows operators of nodes to monitor the activity of their nodes, just like a block explorer allows one to monitor a blockchain. This is how the process looks like there:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Data report by an insurer:
+&lt;img src=&quot;/assets/images/zkpqed2.png&quot; alt=&quot;Data report&quot; style=&quot;width: 100%&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Commitment publish by an insurer:
+&lt;img src=&quot;/assets/images/zkpqed3.png&quot; alt=&quot;Commitment publish&quot; style=&quot;width: 100%&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Tax calculation result:
+&lt;img src=&quot;/assets/images/zkpqed4.png&quot; alt=&quot;Audit&quot; style=&quot;width: 100%&quot; /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;challenges&quot;&gt;Challenges&lt;/h2&gt;
+
+&lt;p&gt;This project uses bleeding-edge technology, and as you can imagine, it posed a few challenges:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The smart contract implementing the autonomic verifier has to maintain a history of “known merkle roots” - each time a commitment is published to the contract, the new root should be calculated and kept.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Doing this naively is an issue - as this is an incremental tree, commitments are never deleted, so it’s best to use as large as possible tree. We chose a tree of depth 30, supporting about a billion of commitments. Managing this large a tree directly in a smart contract is not practical.&lt;/p&gt;
+
+&lt;p&gt;To cope with that, we implemented an efficient incremental merkle tree in Solidity.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The gas requirements for the pairing operations needed to verify proofs are pretty high - verifying a single proof consumes about 2 million gas.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This is where the different trade-offs between the systems come into friction - on the one hand, modularization of proofs allows for more versatile, practical and secure proofs, and on the other hand, we would like to minimize the amount of gas used in the contract.&lt;/p&gt;
+
+&lt;p&gt;There are possibilities to make good trade-offs - using different modularization techniques, combining proofs using &lt;a href=&quot;http://eprint.iacr.org/2012/095&quot;&gt;Proof-Carrying Data&lt;/a&gt; and many more. In a private Ethereum network, it even becomes a non-issue, with the ability to introduce new precompiles.&lt;/p&gt;
+
+&lt;p&gt;Also, there are proposals to decrease the amount of gas, which will improve this situation.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The glue component in the tax proof requires the use of hashes in ZoKrates. We have made efforts to integrate efficient external circuits and are hoping to collaborate with the ZoKrates team to make more integration possibilities a reality.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;summary&quot;&gt;Summary&lt;/h1&gt;
+
+&lt;p&gt;In this post, we’ve seen an end-to-end zero-knowledge system to allow real-time taxation with exposing the user’s private data. This is just scratching the surface of the possibilities of practically using zero-knowledge proofs and other privacy preserving tools, in which we specialize in QED‐it.&lt;/p&gt;
+
+&lt;p&gt;Of course, many technical details have been omitted for brevity, and there’s much more to the story. I invite you to write to us at &lt;a href=&quot;mailto:info@qed-it.com&quot;&gt;info@qed-it.com&lt;/a&gt; to learn more about the SDK.&lt;/p&gt;
+
+&lt;p&gt;If you’re attending &lt;a href=&quot;https://z.cash.foundation/zcon/&quot;&gt;ZCon0&lt;/a&gt;, you’re welcome to meet some of our team and attend our CEO’s talk about “Zero Knowledge In The Enterprise” on day 2 at 9:10AM and the ZKProof workshop on the same day at 1PM, lead by our Daniel Benarroch and Eran Tromer.&lt;/p&gt;
+
+&lt;p&gt;We are also &lt;a href=&quot;https://qed-it.com/jobs/&quot;&gt;hiring&lt;/a&gt;!&lt;/p&gt;
+
+&lt;p&gt;I hope this has been enjoyable, and that it ignites the imagination as to what is now possible in a privacy preserving world!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.</summary></entry><entry><title type="html">Cryptocurrency recovery (or “What the BIP is all of this?”)</title><link href="http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html" rel="alternate" type="text/html" title="Cryptocurrency recovery (or &quot;What the BIP is all of this?&quot;)" /><published>2017-12-10T00:00:00+02:00</published><updated>2017-12-10T00:00:00+02:00</updated><id>http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this</id><content type="html" xml:base="http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html">&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
+&lt;h2 id=&quot;tl-dr&quot;&gt;TL; DR&lt;/h2&gt;
+&lt;h3 id=&quot;what-i-can-help-with&quot;&gt;What I can help with&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;Got any type of coin stuck for which you saved some backup and want to consult whether they can be rescued? Contact me - &lt;a href=&quot;mailto:kobigurk@gmail.com&quot;&gt;kobigurk@gmail.com&lt;/a&gt;!&lt;/li&gt;
+  &lt;li&gt;Want me to walk you through the recovery process? Gladly!&lt;/li&gt;
+  &lt;li&gt;Want to consult how to properly backup your private keys in order to be able to recover your coins in the future? Contact me :-)
+    &lt;h3 id=&quot;how-to-recover-by-yourself&quot;&gt;How to recover by yourself&lt;/h3&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Got Bitcoin Cash or Bitcoin Gold stuck in an address whose private key you have? Use &lt;a href=&quot;https://github.com/shesek/bcash-instadump&quot;&gt;bcash-instadump&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Got Bitcoin Cash or Bitcoin Gold stuck in an Electrum wallet whose 24 words seed you saved? Use the &lt;a href=&quot;https://iancoleman.io/bip39/&quot;&gt;BIP39 tool&lt;/a&gt; to derive the private keys and then use &lt;a href=&quot;https://github.com/shesek/bcash-instadump&quot;&gt;bcash-instadump&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Got Bitcoins stuck in a Ledger Nano S who was destroyed but you have the 24 words saved? Import them into Electrum&lt;/li&gt;
+  &lt;li&gt;Got any type of coin stuck in a Ledger Nano S who was destroyed but you have the 24 words saved? Use the &lt;a href=&quot;https://iancoleman.io/bip39/&quot;&gt;BIP39 tool&lt;/a&gt; to get your private keys and use their respective wallets to import them&lt;/li&gt;
+  &lt;li&gt;Got Bitcoin Cash or Bitcoin Gold stuck in a multi-sig address in Electrum/Copay/anything, but have access to your Bitcoins? It’s a bit more complex, but possible - read through the deep dive or contact me - I can help!&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Want to know more about the technical details? Keep reading.&lt;/p&gt;
+
+&lt;h1 id=&quot;deep-dive&quot;&gt;Deep dive&lt;/h1&gt;
+&lt;p&gt;Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever.&lt;/p&gt;
+
+&lt;p&gt;What’s nice about these solutions is that they hide the complexity of securing your money and give you the best-practice approach to do it. The problem is that they deal with the specific use-case they had in mind and are less flexible when you’d like to deviate a bit from the usual path.&lt;/p&gt;
+
+&lt;p&gt;For example, let’s say you use &lt;a href=&quot;http://docs.electrum.org/en/latest/2fa.html&quot;&gt;Electrum 2FA (Two-Factor Authentication)&lt;/a&gt;. It’s a great solution that uses &lt;a href=&quot;https://api.trustedcoin.com&quot;&gt;TrustedCoin&lt;/a&gt; as a co-signer to each of your transactions. Quoting from them,&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;With a two-factor setup, your computer cannot spend your bitcoins without your entering a code from your cell phone. You will have significantly increased security.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;That’s great! And there’s also a backup key that allows you to recover your Bitcoins in case TrustedCoin ever goes offline, so you’re safe. But…&lt;/p&gt;
+
+&lt;p&gt;Recently some forks in Bitcoin happened. There’s Bitcoin Cash, Bitcoin Gold and maybe some more precious metal variants in the near-future. Those variants operate on a different chain than the usual Bitcoin, and that means that Electrum and TrustedCoin do not support it.&lt;/p&gt;
+
+&lt;p&gt;Damn.&lt;/p&gt;
+
+&lt;p&gt;If both my wallet and the co-signing service do not support Bitcoin Gold… I’m stuck! They hid all the complexity of how they secured me and now I don’t know how to recover.&lt;/p&gt;
+
+&lt;p&gt;That was just an example of a situation that can happen in many other use-cases - hardware wallets (such as &lt;a href=&quot;https://www.ledgerwallet.com/r/6a0a?path=/products/ledger-nano-s&quot;&gt;Ledger Nano S&lt;/a&gt; which I absolutely recommend), multi-sig wallets such as &lt;a href=&quot;https://copay.io/&quot;&gt;Copay&lt;/a&gt; and others.&lt;/p&gt;
+
+&lt;p&gt;It’s important to stress that usually the developers of the different platforms are doing an awesome job - they give you all the necessary bits of data that enable recovery. What they don’t do, understandably, is supporting every different recovery method that a user would like to have.&lt;/p&gt;
+
+&lt;p&gt;For example, if your Ledger Nano S hardware wallet is destroyed because you were trading while taking a bath, the main recommendation is to buy a new one and use the “seed words” you were given when you created your wallet. That’s great, but what if Ledger goes bankrupt? I have to rummage through ebay to find rare Ledgers? Meh.&lt;/p&gt;
+
+&lt;p&gt;How to store Bitcoins securely is a different matter I won’t get into right now, but I want to tell you some &lt;strong&gt;good news&lt;/strong&gt;: most of the wallets I mentioned here and many others use similar methods to store your coins, and that means that most of the steps of recovery are the same.&lt;/p&gt;
+
+&lt;p&gt;In this post I will survey the preliminaries to understand how wallets store your Bitcoins (and other coins) using a single seed, how you would recover your Bitcoins in case you decide (or can) not to use a specific service anymore and what is the backup data you should keep in order to facilitate that.&lt;/p&gt;
+
+&lt;h1 id=&quot;preliminaries&quot;&gt;Preliminaries&lt;/h1&gt;
+&lt;p&gt;Bitcoin development happens through BIPs. These are Bitcoin Improvement Proposals. They are announced on the mailing list and assigned a number. Roughly, if there’s strong support behind it, it’s implemented in Bitcoin clients.&lt;/p&gt;
+
+&lt;p&gt;Following is a high-level description of some of the BIPs that support the mechanism with which different wallets manage private keys.&lt;/p&gt;
+
+&lt;h2 id=&quot;bip32&quot;&gt;BIP32&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki&quot;&gt;BIP32&lt;/a&gt; describes a standard way to generate multiple addresses and private keys from a single private key, in a secure way. The exact technical details can be read in the BIP itself, but I’ll highlight the ones I feel important:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A parent (extended) private key can generate many distinct children private keys by an index.&lt;/li&gt;
+  &lt;li&gt;The derivation can be done in a “normal” way or a hardened way, where a significant security difference exists - in the normal way, it’s possible (with some additional meta-data) to retrieve the parent private key from a child private key, but you gain an interesting feature - given the parent &lt;strong&gt;public&lt;/strong&gt; key, you can view all of its normal children public keys and, for example, monitor their balance.&lt;/li&gt;
+  &lt;li&gt;The way you represent this derivation is by a &lt;strong&gt;path&lt;/strong&gt; - something like “m/0’/0”. This path means - take the (extended) private key, take its hardened child 0 and then from that resulting private key take the normal child 0 - and then you gain a private key you can use.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In drawings it looks like this:
+&lt;img src=&quot;/content/images/2017/12/SoWkIImgAStDuSfLqBLJC53dKZ9GLm8pkHnIyrA0CW00.png&quot; alt=&quot;path&quot; /&gt;
+translates to
+&lt;img src=&quot;/content/images/2017/12/Untitled.png&quot; alt=&quot;path translated&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;bip39&quot;&gt;BIP39&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki&quot;&gt;BIP39&lt;/a&gt; describes a standard way to generate a private key from a sequence of human-readable words.&lt;/p&gt;
+
+&lt;p&gt;From the user’s perspective, she has a Mnemonic Sentence - a sequence of &lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md&quot;&gt;words&lt;/a&gt; from which a binary array is derived. The exact number of words is related to the amount of entropy which translates to the level of security. Ledger Nano S, for example, uses a 24 word sequence.&lt;/p&gt;
+
+&lt;p&gt;There’s an awesome &lt;a href=&quot;https://iancoleman.io/bip39/&quot;&gt;tool&lt;/a&gt; by &lt;a href=&quot;https://github.com/iancoleman&quot;&gt;Ian Coleman&lt;/a&gt; that allows you to generate the master private key given your mnemonic sentence, and following that, the children private keys derived from that. You can even run this tool offline by either compiling it yourself, or saving the html and running it on an offline computer.&lt;/p&gt;
+
+&lt;h2 id=&quot;bip44&quot;&gt;BIP44&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki&quot;&gt;BIP44&lt;/a&gt; uses BIP32 and describes a standard way to generate private keys such that you can use the same master private key for different cryptocurrencies or use-cases without risk.&lt;/p&gt;
+
+&lt;p&gt;That is, it standardizes the path that is used by BIP32:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;m / purpose' / coin_type' / account' / change / address_index
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;purpose - constant &lt;strong&gt;44’&lt;/strong&gt;, to signify that this is a BIP44-compatible derivation.&lt;/li&gt;
+  &lt;li&gt;coin_type - different coins have different numeric types. Bitcoin is 0 and there seems to be consensus that Ethereum is 60, Litecoin is 2 and many others. Ian Coleman’s tool has an extensive list of these, but a wallet doesn’t have to conform to it - the coin type is just a convention.&lt;/li&gt;
+  &lt;li&gt;account - maybe you are managing wallets for different users or purposes. This element in the path allows you to distinguish them by assigning different indices to them.&lt;/li&gt;
+  &lt;li&gt;change - is this an address that receive money, or a change addresses that just received change resulting from money I sent to someone? Can be 0 or 1.&lt;/li&gt;
+  &lt;li&gt;address_index - the index of the address in this account, because you’re using a new address in each transaction when possible… I hope!&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The literal meaning is - you take the master private key, you go to the purpose-indexed hardened child, the coin_type-indexed hardened child of it, the account-indexed hardened child of that, the change-indexed normal child of this and finally the address_index-indexed normal child of those.&lt;/p&gt;
+
+&lt;h2 id=&quot;bip16&quot;&gt;BIP16&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki&quot;&gt;BIP16&lt;/a&gt; is a bit more complex to describe in a few words that also convey the motivation, but I’ll try - it describes a general way to encode complex scripts in a way that’s compatible with single-address schemes and moves the burden of paying the fee for these complex scripts from the sender to the receiver.&lt;/p&gt;
+
+&lt;p&gt;Such a complex script can be M-out-of-N multi-sig - an address from which you can only spend using M signatures out of N parties involved. This mechanism is used, for example, in Electrum 2FA, with a 2-out-of-3 multi-sig.&lt;/p&gt;
+
+&lt;p&gt;Bitcoin’s scripting language is rich and I gave a talk on how it works and other interesting scripts you can use in the &lt;a href=&quot;https://drive.google.com/open?id=0B-EU9txb0XfwYkE1eFFVLW1tLU0&quot;&gt;BlockchainWTB conference&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;recovery&quot;&gt;Recovery&lt;/h1&gt;
+&lt;h2 id=&quot;types-of-addresses&quot;&gt;Types of addresses&lt;/h2&gt;
+&lt;p&gt;Now we’re getting to the juicy stuff! We now know all the ingredients we need to recover from many different situation and I’m to describe some of these through concrete examples.&lt;/p&gt;
+
+&lt;h3 id=&quot;p2pkh-regular-addresses&quot;&gt;P2PKH (regular addresses)&lt;/h3&gt;
+&lt;p&gt;When you use your new Ledger Nano S for the first time, it walks you through a setup process. In this process, you are presented with a mnemonic sentence of 24 words.&lt;/p&gt;
+
+&lt;p&gt;Now you know that these words actually generate a master private key for your Ledger using BIP39.&lt;/p&gt;
+
+&lt;p&gt;When you use your different wallet in the chrome apps that Ledger supplies you with, you are actually using the same master private key but with different coin types, account indices and address indices, as specified in BIP44.&lt;/p&gt;
+
+&lt;p&gt;Even more, the awesome guys at Ledger give you the option to see the exact path to your addresses - just go to your account settings in one of the wallet apps, and you will see a path that looks like a BIP44 path - “m/44’/0’/0”.&lt;/p&gt;
+
+&lt;p&gt;So, if you want to recover from situation where Ledger doesn’t work anymore, you could import it into Electrum, for example.&lt;/p&gt;
+
+&lt;p&gt;Let’s assume, though, you’d like to know for 100% you don’t depend on any single wallet software to exist anymore - you can use the BIP39 tool and see the private keys there and generate transactions using these private keys using any Bitcoin wallet you’d like. That can be &lt;a href=&quot;https://bitcoin.org/en/download&quot;&gt;Bitcoin Core&lt;/a&gt; or even a Bitcoin library such as &lt;a href=&quot;https://bitcoinjs.org/&quot;&gt;BitcoinJS&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;p2sh-multi-sig&quot;&gt;P2SH (multi-sig)&lt;/h3&gt;
+&lt;p&gt;P2SH is BIP16 - roughly, the method to use complex scripts such as multi-sig, as used by Electrum 2FA, Copay and others.&lt;/p&gt;
+
+&lt;p&gt;Recovering from a multi-sig wallet service going offline is a bit more complex, but it’s still possible.&lt;/p&gt;
+
+&lt;p&gt;Let’s examine a 2-out-of-3 multi-sig Bitcoin wallet case. In this case, the address is derived from the &lt;strong&gt;3&lt;/strong&gt; &lt;strong&gt;public&lt;/strong&gt; keys of the different participants. Let’s assume we have these:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A primary key which you own and use in the usual transactions&lt;/li&gt;
+  &lt;li&gt;a backup key which you store offline&lt;/li&gt;
+  &lt;li&gt;the key of a wallet protection service, such as TrustedCoin&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To transact from this address, you’d have to sign the transaction using &lt;strong&gt;2&lt;/strong&gt; of the &lt;strong&gt;private&lt;/strong&gt; keys. In this case, you’d usually use your primary one and the wallet protection service would provide the second signature. In case the wallet protection service goes offline, you’d use your primary and backup key.&lt;/p&gt;
+
+&lt;p&gt;The thing is, that in order to transact from a P2SH address you don’t need just the 2 private keys, but also a &lt;strong&gt;redeem script&lt;/strong&gt; derived from the 3 public keys. That means, that in order to successfully recover, you also need this redeem script. So make sure you save that as well.&lt;/p&gt;
+
+&lt;h2 id=&quot;ok-fine-how-to-actually-do-it&quot;&gt;OK, fine… How to actually do it?&lt;/h2&gt;
+&lt;p&gt;For normal addresses, an ideal recovery software would roughly do this:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Use BIP39 with your seed words to recover your master private key&lt;/li&gt;
+  &lt;li&gt;Collect the unspent outputs of the address you want to spend from - these are the Bitcoins you’ll send&lt;/li&gt;
+  &lt;li&gt;Sign a transaction that sends money from this address to a destination address for your choosing&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;An example of such tool that automates a lot of this process in the case of Bitcoin Cash and Bitcoin Gold forks is &lt;a href=&quot;https://github.com/shesek/bcash-instadump&quot;&gt;bcash-instadump&lt;/a&gt; by Nadav Ivgi.&lt;/p&gt;
+
+&lt;p&gt;For P2SH addresses, you’d have to do the same, but when you sign the transaction, you’d provide multiple private keys and the redeem script. This redeem script is easily attainable in good wallets such as Electrum. I had such a case and wrote some code that uses exactly this redeem script to extract Bitcoin Gold using BitcoinJS.&lt;/p&gt;
+
+&lt;p&gt;For other types of coins that use this scheme the recovery process is similar in theory, but it usually requires a different set of libraries and wallet software. For instance, in Ethereum, you may use &lt;a href=&quot;myetherwallet.com&quot;&gt;MyEtherWallet&lt;/a&gt; with the derived private keys.&lt;/p&gt;
+
+&lt;p&gt;If you have some stuck Zcash, you may notice that the BIP39 tool misses it. That’s actually because of a technical limitation in BitcoinJS - Zcash use an address prefix which is 2 bytes, but BitcoinJS only supports a single-byte address prefixes. I have a hacky-fix from it that I use, but it’s not generic enough to publish.&lt;/p&gt;
+
+&lt;p&gt;For some coins (such as Bitcoin Gold), there are also some wallets that supports the import of single-address private keys, but are not open-source. That doesn’t immediately mean the wallet developers are malicious, but it bugs me to use something proprietary like this for sensitive matters like money.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I hope this post would encourage people to take advantage of the best security practices, such as using a hardware wallet or multi-sig.&lt;/p&gt;
+
+&lt;p&gt;In this latest price surge, a lot of new folks come in, techie or otherwise, and are worried of using complex software, but using the easier-to-use ones (such as hardware wallets) feels like being dependent on a specific piece of software. It might feel like you’re losing control of your coins, contrary to the promise of cryptocurrencies.&lt;/p&gt;
+
+&lt;p&gt;I hope this post showed you that you’re not actually strongly tied to it - you could always recover from it, given you that you backed up your private keys, or your seed, and required metadata (such as redeem scripts). You can do it yourself or the help of your friendly techier Bitcoiner friend.&lt;/p&gt;
+
+&lt;p&gt;There are, of course, other recovery cases which I didn’t cover - such as wallets and coins that don’t use these schemes and other types of coins which require special handling.&lt;/p&gt;
+
+&lt;p&gt;To wrap it up, I’d want you to feel free to reach out to me (&lt;a href=&quot;mailto:kobigurk@gmail.com&quot;&gt;kobigurk@gmail.com&lt;/a&gt; or @kobigurk on Twitter) if you have any stuck coins you’d like help with, would like to consult about backing up enough data to be able to recover in the future or wondering about the deeper technical details of how all of this works.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it's not always easy to recover.</summary></entry><entry><title type="html">Phishing in the age of preview</title><link href="http://localhost:4000/2017/04/07/phising-preview.html" rel="alternate" type="text/html" title="Phishing in the age of preview" /><published>2017-04-07T00:00:00+03:00</published><updated>2017-04-07T00:00:00+03:00</updated><id>http://localhost:4000/2017/04/07/phising-preview</id><content type="html" xml:base="http://localhost:4000/2017/04/07/phising-preview.html">&lt;p&gt;Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.&lt;/p&gt;
+
+&lt;p&gt;Consider the following situation: Your WhatsApp account has been hacked. The hacker goes through your contacts list and message history, finding out who are your the people you’re conversing with the most. Then, the hacker prepares a malicious web-site - the web-site installs some malware that steals your bank account password once you go into it. The hacker even makes the web-site have a nice preview about a subject you’re discussing with your friend often, so your friend would think it’s a legitimate web-site. The friend, not knowing he’s talking with a hacker rather than his good friend, opens the link and gets infected!&lt;/p&gt;
+
+&lt;p&gt;This may sound unrealistic - a messaging account getting hacked, but it happened to a colleague of mine in &lt;a href=&quot;http://qed-it.com&quot;&gt;QED-it&lt;/a&gt;. His Skype account got hacked and started distributing suspicious links to some of his contacts. Apparently, it was quite successful, as some of these contacts got hacked as well and sent him suspicious links back.&lt;/p&gt;
+
+&lt;p&gt;So while it’s a multi-step phishing attack, once you get hold of a social media or messaging account, if you can construct believable links, it should be pretty easy to infect your contacts.&lt;/p&gt;
+
+&lt;p&gt;#Wait, what?&lt;/p&gt;
+
+&lt;p&gt;You must think - “well, this guy is crazy, it’s not that easy creating these links”. Is it really that easy to construct believable previews? Apparently yes! All you have to do is implement the &lt;a href=&quot;http://ogp.me/&quot;&gt;Open Graph Protocol&lt;/a&gt; on your web-page. This is a description of the Open Graph protocol, in their words:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;The Open Graph protocol enables any web page to become a rich object in a social graph. For instance, this is used on Facebook to allow any web page to have the same functionality as any other object on Facebook.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Many of the messaging platforms support it - an incomplete list includes Facebook, WhatsApp and Telegram.&lt;/p&gt;
+
+&lt;p&gt;In order to have a preview for your web-site, you just need to add this prefix to the &lt;code class=&quot;highlighter-rouge&quot;&gt;html&lt;/code&gt; tag and these properties to your &lt;code class=&quot;highlighter-rouge&quot;&gt;head&lt;/code&gt; section:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;prefix=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og: http://ogp.me/ns#&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt; 
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:title&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:site_name&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:image&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:url&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:description&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;That’s it. The hacker can now insert whatever code he wants, even a redirect to another web-site.&lt;/p&gt;
+
+&lt;p&gt;Another component which may be useful in order to mask the fact it’s a malicious URL would be a URL shortener such as &lt;a href=&quot;http://bit.ly&quot;&gt;bit.ly&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;#Meh, that’s a bit of work
+Well, then you can just use &lt;a href=&quot;http://roll.kobigurk.com/generator.html&quot;&gt;my tool&lt;/a&gt; to generate an auto-redirecting malicious URL shortened by bit.ly.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/content/images/2017/04/Untitled.png&quot; alt=&quot;TPaaS&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now, that’s really easy…&lt;/p&gt;
+
+&lt;p&gt;This, &lt;a href=&quot;http://bit.ly/2oCoEeY&quot;&gt;http://bit.ly/2oCoEeY&lt;/a&gt; , is a link that has a preview exactly like a real BBC article, but actually rick-rolls you (advantage if you like Rick Astley music videos!). This is its preview as it’s rendered on Telegram:
+&lt;img src=&quot;/content/images/2017/04/Untitled-1.png&quot; alt=&quot;TelegramExample&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;#What can we do?
+Good question. It’s always an interactive game - put a barrier, hackers get through and so on. But, in my feeling, there’s a lot of room for improvement regarding these previews.&lt;/p&gt;
+
+&lt;p&gt;Facebook, for example, does a better job than the rest:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;If a URL is given in the &lt;code class=&quot;highlighter-rouge&quot;&gt;og:url&lt;/code&gt; tag, that one is eventually used to retrieve the others.&lt;/li&gt;
+  &lt;li&gt;If a URL is not given or invalid, then the actual URL is displayed under the post.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In Telegram and WhatsApp, this is not the case - you completely control the content that is shown to the user.&lt;/p&gt;
+
+&lt;p&gt;So, to begin with, sites can show the actual URL being used to retrieve the tags.&lt;/p&gt;
+
+&lt;p&gt;A different direction I’ve been considering is similar to the HTTPS user experience existing in most major browsers:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;If the URL is not authenticated (HTTP), show a message that says “this preview is not secure”.&lt;/li&gt;
+  &lt;li&gt;If the URL is from an HTTPS link, show the Common Name in the certificate.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;These details alone would make the situation much better.&lt;/p&gt;
+
+&lt;p&gt;#To summarize…
+Link previews are nice and fun, but may also be used as a convenient tool to improve phishing campaigns considerably. I believe there are solutions to make it better and some platforms are realizing this and taking steps, but there’s more work to do.&lt;/p&gt;
+
+&lt;p&gt;Hopefully we can combine the easiness and convenience with security!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.</summary></entry><entry><title type="html">Mocking Ethereum contracts</title><link href="http://localhost:4000/2016/09/24/mocking-ethereum-contracts.html" rel="alternate" type="text/html" title="Mocking Ethereum contracts" /><published>2016-09-24T00:00:00+03:00</published><updated>2016-09-24T00:00:00+03:00</updated><id>http://localhost:4000/2016/09/24/mocking-ethereum-contracts</id><content type="html" xml:base="http://localhost:4000/2016/09/24/mocking-ethereum-contracts.html">&lt;p&gt;Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.&lt;/p&gt;
+
+&lt;p&gt;For node.js, for example, we have Mocha as a testing framework a Sinon.JS as a mocking framework. This is a code example that shows the usage of these two together:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+var sinon = require('sinon');
+                                                                                                                                                                                                                                                                                                                                                                           
+it(&quot;returns the return value from the original function&quot;, function () {
+  var myAPI = {
+    method: function () {
+      return 5;
+    }
+  };
+  var mock = sinon.mock(myAPI);
+  mock.expects(&quot;method&quot;).returns(42);
+
+  var result = myAPI.method();
+  assert.equal(result, 42);
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this example, you take a function, &lt;code class=&quot;highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt;, that usually returns &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;, and make it return &lt;code class=&quot;highlighter-rouge&quot;&gt;42&lt;/code&gt;. This is useful when you want to see how your code behaves when, for example, &lt;code class=&quot;highlighter-rouge&quot;&gt;result&lt;/code&gt; is larger than &lt;code class=&quot;highlighter-rouge&quot;&gt;30&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;A more complex example would be:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+var sinon = require('sinon');
+                                                                                                                                                                                                                                                                                                                                                                           
+function once(fn) {
+  var returnValue, called = false;
+  return function () {
+      if (!called) {
+        called = true;
+          returnValue = fn.apply(this, arguments);
+      }
+      return returnValue;
+  };
+}
+
+it(&quot;returns the return value from the original function&quot;, function () {
+  var myAPI = { 
+    method: function () {
+      return 5;
+    } 
+  };
+  var mock = sinon.mock(myAPI);
+  mock.expects(&quot;method&quot;).returns(42);
+
+  var proxy = once(myAPI.method);
+
+  assert.equals(proxy(), 42);
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this example, we don’t call &lt;code class=&quot;highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt; directly. Instead, &lt;code class=&quot;highlighter-rouge&quot;&gt;once&lt;/code&gt; calls it. So although we didn’t call it directly, the method was still mocked and returned &lt;code class=&quot;highlighter-rouge&quot;&gt;42&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;testing-in-ethereum&quot;&gt;Testing in Ethereum&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;https://live.ether.camp/&quot; target=&quot;_blank&quot;&gt;Ether.camp&lt;/a&gt; has been working on a pretty cool testing framework, utilizing the sandbox they developed for the excellent IDE, &lt;strong&gt;Ethereum Studio&lt;/strong&gt;. You can see examples of it &lt;a href=&quot;https://github.com/ether-camp/ethereum-testing-reference&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Let’s look at a specific example. Let’s say you wrote this simple math performing contract, &lt;strong&gt;Math.sol&lt;/strong&gt;, using Solidity:&lt;/p&gt;
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Math&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
+    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mul&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
+    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	
+  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
+    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
+    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;A simple test case would be:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+
+var Workbench = require('ethereum-sandbox-workbench');
+var workbench = new Workbench({
+  defaults: {
+    from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+  }
+});
+var sandbox = workbench.sandbox;
+
+workbench.startTesting('Math', function(contracts) {
+  it('sum-test', function() {
+    return contracts.Math.new()
+    .then(function(contract) {
+      return contract.sum(2,2);
+    })
+    .then(function (txHash) {
+      return workbench.waitForSandboxReceipt(txHash);
+    })
+    .then(function (receipt) {
+      var result = sandbox.web3.toBigNumber(receipt.returnValue).toNumber();
+      assert.equal(result, 4);
+      assert.notEqual(result, 5);
+    });
+  });
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This test case does the following:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Start a configured sandbox environment to which contracts can be deployed.&lt;/li&gt;
+  &lt;li&gt;Deploys the &lt;strong&gt;Math&lt;/strong&gt; contract to the sandbox.&lt;/li&gt;
+  &lt;li&gt;Checks that addition actually works correctly in Ethereum. If you run this test case with Mocha, you’ll be sure to see it does!&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;You probably noticed that after calling &lt;code class=&quot;highlighter-rouge&quot;&gt;startTesting&lt;/code&gt; we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to &lt;a href=&quot;https://github.com/ConsenSys/ether-pudding&quot; target=&quot;_blank&quot;&gt;Ether Pudding&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;mocking-in-ethereum&quot;&gt;Mocking in Ethereum&lt;/h1&gt;
+&lt;p&gt;But what about mocking? When you’re testing Ethereum contracts, it’s more than a matter of modifying javascript functions. Ethereum contracts are pieces of code living on the Ethereum blockchain, accessible by sending transactions or calling their address.&lt;/p&gt;
+
+&lt;p&gt;For example, let’s look at the following contract:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
+
+contract GoldPriceChecker {
+  function GoldPriceChecker(address goldPriceContractAddress) {
+    goldPriceContract = goldPriceContractAddress;
+  }
+
+  function getGoldPriceHappinessMeter() returns (uint) {
+    uint feedPrice = GoldPrice(goldPriceContract).price();
+    if (feedPrice &amp;gt; 200) {
+      return 1;
+    } else {
+      return 2;
+    }
+  }
+
+  address goldPriceContract;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This contract checks the price of gold and returns a “happiness meter” depending on the price. It depends on a &lt;strong&gt;GoldPrice&lt;/strong&gt; contract, of which’s address is provided in our contract’s constructor. The interface of the &lt;strong&gt;GoldPrice&lt;/strong&gt; contract is:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {
+  function GoldPrice(); 
+  function price() constant returns(uint256); 
+  function notifyCallback(); 
+  function getPriceWithParameter(uint input) returns(uint);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This means that if we were to mock an Ethereum contract, we would want an entity living on the blockchain that will respond instead of the mocked contract, but still adhering to the same interface.&lt;/p&gt;
+
+&lt;h1 id=&quot;enter-proxy-contract&quot;&gt;Enter proxy contract&lt;/h1&gt;
+&lt;p&gt;A solution for this may be fulfilled a contract providing the following features:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Can be accessed with the same interface of the mocked contract.&lt;/li&gt;
+  &lt;li&gt;Can be configured with desired responses to calls to mocked functions.&lt;/li&gt;
+  &lt;li&gt;Can be configured with desired follow-up transactions to mocked functions.&lt;/li&gt;
+  &lt;li&gt;Can notify when a mocked contract function was called.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In order to understand how to create such a contract, we need to understand how transactions and calls in Ethereum work.&lt;/p&gt;
+
+&lt;h1 id=&quot;ethereum-contract-abi&quot;&gt;Ethereum Contract ABI&lt;/h1&gt;
+&lt;p&gt;Let’s say we want to call the Solidity function &lt;code class=&quot;highlighter-rouge&quot;&gt;getPriceWithParameter&lt;/code&gt; with the parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;. According to the &lt;a href=&quot;https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI&quot; target=&quot;_blank&quot;&gt;Ethereum Contract ABI&lt;/a&gt;, we first calculate the Method ID: first 4 bytes of &lt;code class=&quot;highlighter-rouge&quot;&gt;sha3(&quot;getPriceWithParameter(uint256)&quot;)&lt;/code&gt;. In our case, it would be &lt;code class=&quot;highlighter-rouge&quot;&gt;0x60360e31&lt;/code&gt;. Then, we encode the parameters. In our case, it would be &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0000000000000000000000000000000000000000000000000000000000000005&lt;/code&gt;.  Then, we concatenate them.&lt;/p&gt;
+
+&lt;p&gt;Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; called &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt; which was deployed at address &lt;code class=&quot;highlighter-rouge&quot;&gt;0xabcdefababcdefababcdefababcdefababcdefab&lt;/code&gt;, then calling the following:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;goldPrice.getPriceWithParaemeter(5, {
+  from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;is equivalent to:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;web3.eth.call({
+  from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826',
+  to: '0xabcdefababcdefababcdefababcdefababcdefab',
+  data: '0x60360e310000000000000000000000000000000000000000000000000000000000000005'
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In the Solidity code of the contract iself, it’s possible to access the &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; using the globally available &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;, which is of type &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt;, and the method ID using &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;, which is of type &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes4&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;proxy-contract&quot;&gt;Proxy contract&lt;/h1&gt;
+&lt;p&gt;Without further ado, I present you the Proxy contract:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract Proxy {
+
+  bool _traceFunctionCalls = false;
+  event Trace(address caller, bytes data, uint value);
+
+  function Proxy(bool traceFunctionCalls) {
+    _traceFunctionCalls = traceFunctionCalls;
+  }
+
+  function setMock(bytes4 method, uint8 operationType, address target, bytes data) {
+    operations[method] = Operation(operationType, target, data);
+  }
+
+  function setMockWithArgs(bytes methodWithData, uint8 operationType, address target, bytes data) {
+    operationsWithArgs[methodWithData] = Operation(operationType, target, data);
+  }
+
+  function() {
+    if (_traceFunctionCalls) {
+      Trace(msg.sender, msg.data, msg.value);
+    }
+    Operation memory operation = operationsWithArgs[msg.data];
+    uint8 operationType = operation.operationType;
+    if (operationType == 0) {
+      operation = operations[msg.sig];
+      operationType = operation.operationType;
+      if (operationType == 0) {
+        throw;
+      }
+    } 
+
+    if (operationType == 1) {
+      address target = operation.target;
+      target.call(operation.data);
+    } else if (operationType == 2) {
+      bytes memory data = operation.data;
+      assembly {
+        return(add(data, 32), mload(data))
+      }
+    } else {
+      throw;
+    }
+  }
+
+  struct Operation {
+    uint8 operationType;
+    address target;
+    bytes data;
+  }
+
+  mapping (bytes4 =&amp;gt; Operation) operations;
+  mapping (bytes =&amp;gt; Operation) operationsWithArgs;
+
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As can be seen in the contract code, it has three functions:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setMock&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (&lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setMockWithArgs&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (&lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;Fallback function (&lt;code class=&quot;highlighter-rouge&quot;&gt;function () {}&lt;/code&gt;) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; of the resulting call will be an attempt to invoke the function of the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract on the proxy contract itself.&lt;/p&gt;
+
+&lt;p&gt;Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked &lt;code class=&quot;highlighter-rouge&quot;&gt;setMock&lt;/code&gt; with the following arguments: &lt;code class=&quot;highlighter-rouge&quot;&gt;setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)&lt;/code&gt;. In other words, we’ve configured the proxy contract to return &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt; when called with a &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt; of &lt;code class=&quot;highlighter-rouge&quot;&gt;0x6036e31&lt;/code&gt;. By pointing the Ether Pudding interface of &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the deployed proxy contract, the resulting object being &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt;, this is equivalent to calling &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice.getPriceWithParameter&lt;/code&gt; with any parameter.&lt;/p&gt;
+
+&lt;p&gt;Before I’ll show you how to use it in the mocking framework, I want to point you to the following part in the proxy contract:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bytes memory data = operation.data;
+assembly {
+  return(add(data, 32), mload(data))
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., &lt;code class=&quot;highlighter-rouge&quot;&gt;uint256&lt;/code&gt;. By using inline assembly and the &lt;code class=&quot;highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode, we are able force the contract to return with the bytes saved when the mock was configured.&lt;/p&gt;
+
+&lt;p&gt;To understand how this works, we should look at how a &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt; variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.&lt;/p&gt;
+
+&lt;p&gt;The quoted code segment does the following:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Copies &lt;code class=&quot;highlighter-rouge&quot;&gt;operation.data&lt;/code&gt; from storage to memory, by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;memory&lt;/code&gt; keyword. This is needed, because the &lt;code class=&quot;highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode returns from memory.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mload&lt;/code&gt; loads the first 32 bytes of the &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; variables. This would be the length of the array.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;add(data, 32)&lt;/code&gt; is the address of the actual data in the &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt; array.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;return(p,s)&lt;/code&gt; itself terminates the contract execution and returns &lt;code class=&quot;highlighter-rouge&quot;&gt;s&lt;/code&gt; bytes of data starting  in memory address &lt;code class=&quot;highlighter-rouge&quot;&gt;p&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;To learn more about in-line assembly, check out the &lt;a href=&quot;https://solidity.readthedocs.io/en/latest/control-structures.html#inline-assembly&quot; target=&quot;_blank&quot;&gt;Solidity documentation&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;mocking-framework&quot;&gt;Mocking framework&lt;/h1&gt;
+&lt;p&gt;To make life easy, we added the mocking framework to the &lt;a href=&quot;https://github.com/ether-camp/ethereum-sandbox-workbench&quot; target=&quot;_blank&quot;&gt;ethereum-sandbox-workbench&lt;/a&gt;. This is an example of working with it:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+var Workbench = require('ethereum-sandbox-workbench');
+
+var fromAddress = '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826';
+var workbench = new Workbench({
+  defaults: {
+    from: fromAddress
+  }
+});
+
+var sandbox = workbench.sandbox;
+
+workbench.startTesting(['GoldPrice', 'GoldPriceChecker'], function(contracts) {
+  var goldPrice;
+  var mockContract;
+  var goldPriceChecker;
+
+  it('tests-deploy', function() {
+    return contracts.GoldPrice.new()
+    .then(function(contract) {
+      if (contract.address) {
+        goldPrice = contract;
+      } else {
+        throw new Error('No address for deployed contract');
+      }
+    });
+  });
+
+  it('tests-deploy-proxy', function() {
+    return contracts.GoldPrice.newMock({
+      traceFunctionCalls: true
+    })
+    .then(function(contract) {
+      mockContract = contract;
+      return mockContract.price.mockCallReturnValue(299);
+    })
+    .then(function(receipt) {
+      return mockContract.price.call();
+    })
+    .then(function(value) {
+      assert(value.equals(299));
+    });
+  });
+
+  it('tests-deploy-checker', function() {
+    return contracts.GoldPriceChecker.new(mockContract.address)
+    .then(function(contract) {
+      goldPriceChecker = contract;
+      return goldPriceChecker.getGoldPriceHappinessMeter.call();
+    })
+    .then(function(value) {
+      assert.equal(value.toString(), '1');
+      return mockContract.price.mockCallReturnValue(5);
+    })
+    .then(function(receipt) {
+      return goldPriceChecker.getGoldPriceHappinessMeter.call();
+    })
+    .then(function(value) {
+      assert.equal(value.toString(), '2');
+    });
+  });
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Let’s recap what we see here:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;To deploy a proxy contract but have the interface of the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract, we deploy using &lt;code class=&quot;highlighter-rouge&quot;&gt;newMock&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;new&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;To set-up a new mock for a call return value, we use &lt;code class=&quot;highlighter-rouge&quot;&gt;mockCallReturnValue&lt;/code&gt; on the &lt;code class=&quot;highlighter-rouge&quot;&gt;price&lt;/code&gt; function.&lt;/li&gt;
+  &lt;li&gt;Then the &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPriceChecker&lt;/code&gt; which calls the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract in its code sees the mocked value.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry><entry><title type="html">Additive Homomorphic Encryption on Ethereum</title><link href="http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" rel="alternate" type="text/html" title="Additive Homomorphic Encryption on Ethereum" /><published>2016-04-10T00:00:00+03:00</published><updated>2016-04-10T00:00:00+03:00</updated><id>http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum</id><content type="html" xml:base="http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html">&lt;p&gt;A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.&lt;/p&gt;
+
+&lt;p&gt;OK, let’s be serious - private blockchains are in the exploration phase. Financial institutions, insurance firms and many others are finding out how they can use the technology, or at least some of its concepts. One way to look at them is as a specialized database for specific use-cases. Projects like &lt;a href=&quot;https://www.hyperledger.org/&quot; target=&quot;_blank&quot;&gt;HyperLedger&lt;/a&gt; and &lt;a href=&quot;http://r3cev.com/blog/2016/4/4/introducing-r3-corda-a-distributed-ledger-designed-for-financial-services&quot; target=&quot;_blank&quot;&gt;Corda&lt;/a&gt; build infrastructures that will power some use-cases.&lt;/p&gt;
+
+&lt;p&gt;But today I’d like to discuss something a bit different. For quite some time, I’ve been interested in privacy on the blockchain. How can we add some privacy properties to public transactions while still gaining benefit from the underlying blockchain (such as finality, limited auditing, etc)? There are a few interesting ideas, some of them are explored in Vitalik’s blog post about &lt;a href=&quot;https://blog.ethereum.org/2016/01/15/privacy-on-the-blockchain/&quot; target=&quot;_blank&quot;&gt;Privacy on the Blockchain&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;#So, what can we do?
+One approach which I wanted to explore is homomorphic encryption. From &lt;a href=&quot;https://en.wikipedia.org/wiki/Homomorphic_encryption&quot; target=&quot;_blank&quot;&gt;Wikipedia&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Homomorphic encryption is a form of encryption that allows computations to be carried out on ciphertext, thus generating an encrypted result which, when decrypted, matches the result of operations performed on the plaintext.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;For example, assuming \(ENC\) and \(DEC\) are our encryption and decryption functions respectively, we can have:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;x\_1=3, x\_2=4 \\\\ 
+c\_1 = ENC(x\_1), c\_2 = ENC(x\_2) \\\\
+c\_3 = F(c\_1, c\_2) \\\\
+ \text{ such that} \\\\
+x\_3 = DEC(c\_3) = x\_1 + x\_2&lt;/script&gt;
+
+&lt;p&gt;By performing an operation on the encrypted \(x_1, x_2\) we got their sum.&lt;/p&gt;
+
+&lt;p&gt;The “holy grail” of homomorphic encryption is &lt;a href=&quot;https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption&quot; target=&quot;_blank&quot;&gt;Fully Homomorphic Encryption&lt;/a&gt;, with which you can get results of arbitrary computations on encrypted data, not just their sum or product. One cryptosystem which provides you with &lt;em&gt;additive&lt;/em&gt; homomorphic encryption is the &lt;a href=&quot;https://en.wikipedia.org/wiki/Paillier_cryptosystem&quot; target=&quot;_blank&quot;&gt;Paillier Cryptosystem&lt;/a&gt;. Additive here means that you can get the sum of two encrypted numbers.&lt;/p&gt;
+
+&lt;p&gt;The Paillier Cryptosystem is an asymmetric encryption scheme, meaning that you encrypt with your public key and decrypt with your private key. Leaving the key generation process aside, the parameters we need to use the cryptosystem are:
+&lt;script type=&quot;math/tex&quot;&gt;\\text{public key} = (n, g) \\\\
+\\text{private key} = (\lambda, \mu)&lt;/script&gt;
+The specific meaning of the parameters is not needed for what I want to show, and they’re all the result of the key generation process.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Encryption process&lt;/strong&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Take \(m\), the number you want to encrypt. \(m\) is a member of \(\mathbb{Z}_n\).&lt;/li&gt;
+  &lt;li&gt;Generate a random number \(r\).&lt;/li&gt;
+  &lt;li&gt;The encrypted number will be \(c = g^m \cdot r^n \mod n^2\).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Decryption process&lt;/strong&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Take \(c\), the encrypted number, which is in \(\mathbb{Z}^*_{n^2}\).&lt;/li&gt;
+  &lt;li&gt;The decrypted number will be \(m = \frac{(c^{\lambda} \mod n^2) - 1}{n} \cdot \mu \mod n\).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;What we’re interested in now is the homomorphic addition property:
+&lt;script type=&quot;math/tex&quot;&gt;DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2&lt;/script&gt;&lt;/p&gt;
+
+&lt;p&gt;#Homomorphic Encryption in Practice
+So what does that property give us? Let’s look at a specific use case. Let’s assume we have an Ethereum smart contract that manages the expenses of employees:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Every day, employees submit their expenses to the contract. They don’t wan the other employees to know their expenses, so they encrypt it and send it to the contract.&lt;/li&gt;
+  &lt;li&gt;The contract adds the encrypted expense to the current total expenses amount.&lt;/li&gt;
+  &lt;li&gt;At the end of every month, the company wants to know the total expenses amount, but doesn’t want anyone else to know it. They take the encrypted total expenses amount from the contract and decrypt it locally.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This would be a contract with my pre-generated parameters and an initial encrypted total expenses amount of 3:&lt;/p&gt;
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;paillierBalance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;                
+    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x2a6a2efecccf5f09e883b87528104e505dedb63fee8de93ccc059116bf32ae5f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;g&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb033814c46b1c673d80ad171adbcf4bc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;   
+    &lt;span class=&quot;nx&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb033814c46b1c673d80ad171adbcf4bb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;paillierBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;                                      
+        &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;assembly&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_n&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nInner&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                                 
+    &lt;span class=&quot;nx&quot;&gt;modifier&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;onlyController&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sender&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;  
+        &lt;span class=&quot;nx&quot;&gt;_&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;homomorphicAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;onlyController&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;              
+        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;              
+        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;                                          
+        &lt;span class=&quot;nx&quot;&gt;assembly&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedBalance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceInner&lt;/span&gt;                  
+            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedChange&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedChange&lt;/span&gt;             
+            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_nSquared&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredInner&lt;/span&gt;                  
+            &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mulmod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_encryptedBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;                            
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The encryption and decryption would be client side, using a &lt;a href=&quot;https://github.com/kobigurk/paillier&quot; target=&quot;_blank&quot;&gt;python paillier library&lt;/a&gt;. That means that the company first encrypts the initial balance, and whenever the employees want to report the expense, they use the &lt;strong&gt;homomorphicAdd&lt;/strong&gt; function. This function uses the homomorphic addition property to store the result of the sum of the previous balance and the new expense.&lt;/p&gt;
+
+&lt;p&gt;In this manner, the contract has only one storage variable for the balance while employees can report an unlimited number of expenses.&lt;/p&gt;
+
+&lt;p&gt;#Conclusion
+To summarize, this shows a method with which we can preserve privacy while still have some auditing properties. In this example, people can know that they can trust that the final encrypted balance represents the sum of all of the expenses reliably.&lt;/p&gt;
+
+&lt;p&gt;What kind of businesses would use methods like this? Time will tell. This is the moment that companies can be creative and find out new ways to architect their systems to work in a more transparent and efficient world.&lt;/p&gt;
+
+&lt;p&gt;All in all, I feel there is a great potential in using this kind of methods and I would love to discuss ideas. Feel free to &lt;a href=&quot;/contact.html&quot;&gt;contact me&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.</summary></entry><entry><title type="html">Social engineering 101</title><link href="http://localhost:4000/2016/04/05/social-engineering-101.html" rel="alternate" type="text/html" title="Social engineering 101" /><published>2016-04-05T00:00:00+03:00</published><updated>2016-04-05T00:00:00+03:00</updated><id>http://localhost:4000/2016/04/05/social-engineering-101</id><content type="html" xml:base="http://localhost:4000/2016/04/05/social-engineering-101.html">&lt;p&gt;Last Thursday we had our demo day in Boost.VC tribe 7. Excitement, adrenaline and expectations are high - the meetings we’re going to have now, the connections that will assist us in building the companies we are dreaming of.&lt;/p&gt;
+
+&lt;p&gt;But there’s another side to that. This can be exploited. John, a fellow tribe member, says that “people are our greatest resource”. It’s also true that they’re our greatest weakness when it comes to security.&lt;/p&gt;
+
+&lt;p&gt;People are usually easier to manipulate than machines, because we don’t operate by a clear set of rules. We act more like a chaotic system, where one little detail can change entirely the way we behave. Especially when there are feelings involved.&lt;/p&gt;
+
+&lt;p&gt;It became especially clear to me when I noticed my co-founder sending an e-mail with our investor deck to a gmail account. Although in his case he was responsible, it could have been an entirely different situation. There’s no problem creating a gmail account that resembles a real one, by collecting some details from a linkedin account, for example.&lt;/p&gt;
+
+&lt;p&gt;So I set out to prove this point. The tools I used:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Domain bought for a few dollars, with free e-mail by zohomail.&lt;/li&gt;
+  &lt;li&gt;Social Engineering Toolkit.&lt;/li&gt;
+  &lt;li&gt;Some data gathering from linkedin.&lt;/li&gt;
+  &lt;li&gt;HTML5 template.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;First, I built a plausible story. It’s the first Monday since demo day, so it makes sense that an investor would follow up at this point of time. So I crafted the following e-mail:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Hello X,&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;I attended Boost VC’s demo day and was impressed by your presentation.
+We are looking invest in seed rounds of VR related companies.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Could we schedule a chat for next week?
+Meanwhile, I invite you to check out the details of the event we’re hosting next week, it would be great if you could come: &lt;a href=&quot;&quot;&gt;Register&lt;/a&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Best,&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Paul&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I made sure that Paul had a background story. When you google his name, you find out he’s an investor in VR companies. The e-mail also comes from a domain that makes sense. I could have done this part better, though, but more on this later.&lt;/p&gt;
+
+&lt;p&gt;With the Social Engineering Toolkit, I generated a page that looks exactly like g-mail’s login page, but instead forwards the login details to my server of choice:
+&lt;img src=&quot;/assets/images/se101-1.png&quot; alt=&quot;login&quot; style=&quot;width: 100%&quot; /&gt;
+This kind of makes sense, because you might need your gmail account to register to the event.&lt;/p&gt;
+
+&lt;p&gt;As it was just to prove a point, I didn’t capture the login details. After recording the e-mail address, The user was forwarded to the user to the following image:
+&lt;img src=&quot;/assets/images/se101-2.png&quot; alt=&quot;hack&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The results of this were that everybody I sent this e-mail to clicked the link, but no one actually filled in the g-mail account details. I believe this part was my fault. 
+Some ways I could have done it better:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Instead of collecting e-mail accounts, I could have used a known exploit in a PDF or Chrome. It wouldn’t work on everyone, but would be much more effective - everybody opened the link.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;I could have also built the website for the company. One of the potential victims told me he did some research: he googled the guy, and that kind of made sense. But then he tried going to the VC website, which didn’t exist. He still wouldn’t put his details, because he “has been taught better”, but he had a point. To remedy that, I downloaded a free HTML5 template and edited it so it would look like a new VC website (I think it looks better than some VC websites I’ve seen…):
+&lt;img src=&quot;/assets/images/se101-3.png&quot; alt=&quot;VC&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;To summarize, in less than an hour, it’s possible to build a successful phishing attack - given that you can relate to the situation the other person is at.&lt;/p&gt;
+
+&lt;p&gt;Social engineering is dangerous. It happens all the time, and not only by computer hackers. We have to be wary of the e-mails we get, the links we click and, more generally, who we can trust.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Last Thursday we had our demo day in Boost.VC tribe 7. Excitement, adrenaline and expectations are high - the meetings we’re going to have now, the connections that will assist us in building the companies we are dreaming of.</summary></entry></feed>

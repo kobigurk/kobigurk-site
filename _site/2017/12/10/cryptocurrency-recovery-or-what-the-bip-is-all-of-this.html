@@ -1,0 +1,286 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Cryptocurrency recovery (or "What the BIP is all of this?")</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+		<link rel="stylesheet" href="/assets/css/side-menu.css">
+		<link rel="stylesheet" href="/assets/css/styles.css">
+    <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Cryptocurrency recovery (or “What the BIP is all of this?”)</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Cryptocurrency recovery (or “What the BIP is all of this?”)" />
+<meta name="author" content="Kobi" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover." />
+<meta property="og:description" content="Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover." />
+<link rel="canonical" href="http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html" />
+<meta property="og:url" content="http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-12-10T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover.","author":{"@type":"Person","name":"Kobi"},"@type":"BlogPosting","url":"http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html","headline":"Cryptocurrency recovery (or “What the BIP is all of this?”)","dateModified":"2017-12-10T00:00:00+02:00","datePublished":"2017-12-10T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet"
+				href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css">
+
+  </head>
+  <body>
+    <div id="layout">
+			<a href="#menu" id="menuLink" class="menu-link"><span></span></a>
+
+<div id="menu">
+	<div class="pure-menu">
+		<a class="pure-menu-heading" href="#">Kobi Gurkan</a>
+		<ul class="pure-menu-list">
+			
+			<li class="pure-menu-item">
+        <a href="/" class="pure-menu-link" ">Home</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/blog.html" class="pure-menu-link" ">Blog</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/projects.html" class="pure-menu-link" ">Projects</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/presentations.html" class="pure-menu-link" ">Presentations</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/contact.html" class="pure-menu-link" ">Contact</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/pgp.html" class="pure-menu-link" ">PGP key</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://github.com/kobigurk" class="pure-menu-link" target="_blank"">GitHub</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://twitter.com/kobigurk" class="pure-menu-link" target="_blank"">Twitter</a>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+
+			<div id="main">
+				<div class="header">
+					<h3>Cryptocurrency recovery (or "What the BIP is all of this?")</h3>
+				</div>
+				<div class="content">
+					<p>10 Dec 2017 - Kobi</p>
+
+<h1 id="overview">Overview</h1>
+<h2 id="tl-dr">TL; DR</h2>
+<h3 id="what-i-can-help-with">What I can help with</h3>
+<ul>
+  <li>Got any type of coin stuck for which you saved some backup and want to consult whether they can be rescued? Contact me - <a href="mailto:kobigurk@gmail.com">kobigurk@gmail.com</a>!</li>
+  <li>Want me to walk you through the recovery process? Gladly!</li>
+  <li>Want to consult how to properly backup your private keys in order to be able to recover your coins in the future? Contact me :-)
+    <h3 id="how-to-recover-by-yourself">How to recover by yourself</h3>
+  </li>
+  <li>Got Bitcoin Cash or Bitcoin Gold stuck in an address whose private key you have? Use <a href="https://github.com/shesek/bcash-instadump">bcash-instadump</a></li>
+  <li>Got Bitcoin Cash or Bitcoin Gold stuck in an Electrum wallet whose 24 words seed you saved? Use the <a href="https://iancoleman.io/bip39/">BIP39 tool</a> to derive the private keys and then use <a href="https://github.com/shesek/bcash-instadump">bcash-instadump</a></li>
+  <li>Got Bitcoins stuck in a Ledger Nano S who was destroyed but you have the 24 words saved? Import them into Electrum</li>
+  <li>Got any type of coin stuck in a Ledger Nano S who was destroyed but you have the 24 words saved? Use the <a href="https://iancoleman.io/bip39/">BIP39 tool</a> to get your private keys and use their respective wallets to import them</li>
+  <li>Got Bitcoin Cash or Bitcoin Gold stuck in a multi-sig address in Electrum/Copay/anything, but have access to your Bitcoins? It’s a bit more complex, but possible - read through the deep dive or contact me - I can help!</li>
+</ul>
+
+<p>Want to know more about the technical details? Keep reading.</p>
+
+<h1 id="deep-dive">Deep dive</h1>
+<p>Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever.</p>
+
+<p>What’s nice about these solutions is that they hide the complexity of securing your money and give you the best-practice approach to do it. The problem is that they deal with the specific use-case they had in mind and are less flexible when you’d like to deviate a bit from the usual path.</p>
+
+<p>For example, let’s say you use <a href="http://docs.electrum.org/en/latest/2fa.html">Electrum 2FA (Two-Factor Authentication)</a>. It’s a great solution that uses <a href="https://api.trustedcoin.com">TrustedCoin</a> as a co-signer to each of your transactions. Quoting from them,</p>
+
+<blockquote>
+  <p>With a two-factor setup, your computer cannot spend your bitcoins without your entering a code from your cell phone. You will have significantly increased security.</p>
+</blockquote>
+
+<p>That’s great! And there’s also a backup key that allows you to recover your Bitcoins in case TrustedCoin ever goes offline, so you’re safe. But…</p>
+
+<p>Recently some forks in Bitcoin happened. There’s Bitcoin Cash, Bitcoin Gold and maybe some more precious metal variants in the near-future. Those variants operate on a different chain than the usual Bitcoin, and that means that Electrum and TrustedCoin do not support it.</p>
+
+<p>Damn.</p>
+
+<p>If both my wallet and the co-signing service do not support Bitcoin Gold… I’m stuck! They hid all the complexity of how they secured me and now I don’t know how to recover.</p>
+
+<p>That was just an example of a situation that can happen in many other use-cases - hardware wallets (such as <a href="https://www.ledgerwallet.com/r/6a0a?path=/products/ledger-nano-s">Ledger Nano S</a> which I absolutely recommend), multi-sig wallets such as <a href="https://copay.io/">Copay</a> and others.</p>
+
+<p>It’s important to stress that usually the developers of the different platforms are doing an awesome job - they give you all the necessary bits of data that enable recovery. What they don’t do, understandably, is supporting every different recovery method that a user would like to have.</p>
+
+<p>For example, if your Ledger Nano S hardware wallet is destroyed because you were trading while taking a bath, the main recommendation is to buy a new one and use the “seed words” you were given when you created your wallet. That’s great, but what if Ledger goes bankrupt? I have to rummage through ebay to find rare Ledgers? Meh.</p>
+
+<p>How to store Bitcoins securely is a different matter I won’t get into right now, but I want to tell you some <strong>good news</strong>: most of the wallets I mentioned here and many others use similar methods to store your coins, and that means that most of the steps of recovery are the same.</p>
+
+<p>In this post I will survey the preliminaries to understand how wallets store your Bitcoins (and other coins) using a single seed, how you would recover your Bitcoins in case you decide (or can) not to use a specific service anymore and what is the backup data you should keep in order to facilitate that.</p>
+
+<h1 id="preliminaries">Preliminaries</h1>
+<p>Bitcoin development happens through BIPs. These are Bitcoin Improvement Proposals. They are announced on the mailing list and assigned a number. Roughly, if there’s strong support behind it, it’s implemented in Bitcoin clients.</p>
+
+<p>Following is a high-level description of some of the BIPs that support the mechanism with which different wallets manage private keys.</p>
+
+<h2 id="bip32">BIP32</h2>
+<p><a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP32</a> describes a standard way to generate multiple addresses and private keys from a single private key, in a secure way. The exact technical details can be read in the BIP itself, but I’ll highlight the ones I feel important:</p>
+
+<ul>
+  <li>A parent (extended) private key can generate many distinct children private keys by an index.</li>
+  <li>The derivation can be done in a “normal” way or a hardened way, where a significant security difference exists - in the normal way, it’s possible (with some additional meta-data) to retrieve the parent private key from a child private key, but you gain an interesting feature - given the parent <strong>public</strong> key, you can view all of its normal children public keys and, for example, monitor their balance.</li>
+  <li>The way you represent this derivation is by a <strong>path</strong> - something like “m/0’/0”. This path means - take the (extended) private key, take its hardened child 0 and then from that resulting private key take the normal child 0 - and then you gain a private key you can use.</li>
+</ul>
+
+<p>In drawings it looks like this:
+<img src="/content/images/2017/12/SoWkIImgAStDuSfLqBLJC53dKZ9GLm8pkHnIyrA0CW00.png" alt="path" />
+translates to
+<img src="/content/images/2017/12/Untitled.png" alt="path translated" /></p>
+
+<h2 id="bip39">BIP39</h2>
+<p><a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">BIP39</a> describes a standard way to generate a private key from a sequence of human-readable words.</p>
+
+<p>From the user’s perspective, she has a Mnemonic Sentence - a sequence of <a href="https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md">words</a> from which a binary array is derived. The exact number of words is related to the amount of entropy which translates to the level of security. Ledger Nano S, for example, uses a 24 word sequence.</p>
+
+<p>There’s an awesome <a href="https://iancoleman.io/bip39/">tool</a> by <a href="https://github.com/iancoleman">Ian Coleman</a> that allows you to generate the master private key given your mnemonic sentence, and following that, the children private keys derived from that. You can even run this tool offline by either compiling it yourself, or saving the html and running it on an offline computer.</p>
+
+<h2 id="bip44">BIP44</h2>
+<p><a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">BIP44</a> uses BIP32 and describes a standard way to generate private keys such that you can use the same master private key for different cryptocurrencies or use-cases without risk.</p>
+
+<p>That is, it standardizes the path that is used by BIP32:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>m / purpose' / coin_type' / account' / change / address_index
+</code></pre></div></div>
+
+<ul>
+  <li>purpose - constant <strong>44’</strong>, to signify that this is a BIP44-compatible derivation.</li>
+  <li>coin_type - different coins have different numeric types. Bitcoin is 0 and there seems to be consensus that Ethereum is 60, Litecoin is 2 and many others. Ian Coleman’s tool has an extensive list of these, but a wallet doesn’t have to conform to it - the coin type is just a convention.</li>
+  <li>account - maybe you are managing wallets for different users or purposes. This element in the path allows you to distinguish them by assigning different indices to them.</li>
+  <li>change - is this an address that receive money, or a change addresses that just received change resulting from money I sent to someone? Can be 0 or 1.</li>
+  <li>address_index - the index of the address in this account, because you’re using a new address in each transaction when possible… I hope!</li>
+</ul>
+
+<p>The literal meaning is - you take the master private key, you go to the purpose-indexed hardened child, the coin_type-indexed hardened child of it, the account-indexed hardened child of that, the change-indexed normal child of this and finally the address_index-indexed normal child of those.</p>
+
+<h2 id="bip16">BIP16</h2>
+<p><a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">BIP16</a> is a bit more complex to describe in a few words that also convey the motivation, but I’ll try - it describes a general way to encode complex scripts in a way that’s compatible with single-address schemes and moves the burden of paying the fee for these complex scripts from the sender to the receiver.</p>
+
+<p>Such a complex script can be M-out-of-N multi-sig - an address from which you can only spend using M signatures out of N parties involved. This mechanism is used, for example, in Electrum 2FA, with a 2-out-of-3 multi-sig.</p>
+
+<p>Bitcoin’s scripting language is rich and I gave a talk on how it works and other interesting scripts you can use in the <a href="https://drive.google.com/open?id=0B-EU9txb0XfwYkE1eFFVLW1tLU0">BlockchainWTB conference</a>.</p>
+
+<h1 id="recovery">Recovery</h1>
+<h2 id="types-of-addresses">Types of addresses</h2>
+<p>Now we’re getting to the juicy stuff! We now know all the ingredients we need to recover from many different situation and I’m to describe some of these through concrete examples.</p>
+
+<h3 id="p2pkh-regular-addresses">P2PKH (regular addresses)</h3>
+<p>When you use your new Ledger Nano S for the first time, it walks you through a setup process. In this process, you are presented with a mnemonic sentence of 24 words.</p>
+
+<p>Now you know that these words actually generate a master private key for your Ledger using BIP39.</p>
+
+<p>When you use your different wallet in the chrome apps that Ledger supplies you with, you are actually using the same master private key but with different coin types, account indices and address indices, as specified in BIP44.</p>
+
+<p>Even more, the awesome guys at Ledger give you the option to see the exact path to your addresses - just go to your account settings in one of the wallet apps, and you will see a path that looks like a BIP44 path - “m/44’/0’/0”.</p>
+
+<p>So, if you want to recover from situation where Ledger doesn’t work anymore, you could import it into Electrum, for example.</p>
+
+<p>Let’s assume, though, you’d like to know for 100% you don’t depend on any single wallet software to exist anymore - you can use the BIP39 tool and see the private keys there and generate transactions using these private keys using any Bitcoin wallet you’d like. That can be <a href="https://bitcoin.org/en/download">Bitcoin Core</a> or even a Bitcoin library such as <a href="https://bitcoinjs.org/">BitcoinJS</a>.</p>
+
+<h3 id="p2sh-multi-sig">P2SH (multi-sig)</h3>
+<p>P2SH is BIP16 - roughly, the method to use complex scripts such as multi-sig, as used by Electrum 2FA, Copay and others.</p>
+
+<p>Recovering from a multi-sig wallet service going offline is a bit more complex, but it’s still possible.</p>
+
+<p>Let’s examine a 2-out-of-3 multi-sig Bitcoin wallet case. In this case, the address is derived from the <strong>3</strong> <strong>public</strong> keys of the different participants. Let’s assume we have these:</p>
+
+<ul>
+  <li>A primary key which you own and use in the usual transactions</li>
+  <li>a backup key which you store offline</li>
+  <li>the key of a wallet protection service, such as TrustedCoin</li>
+</ul>
+
+<p>To transact from this address, you’d have to sign the transaction using <strong>2</strong> of the <strong>private</strong> keys. In this case, you’d usually use your primary one and the wallet protection service would provide the second signature. In case the wallet protection service goes offline, you’d use your primary and backup key.</p>
+
+<p>The thing is, that in order to transact from a P2SH address you don’t need just the 2 private keys, but also a <strong>redeem script</strong> derived from the 3 public keys. That means, that in order to successfully recover, you also need this redeem script. So make sure you save that as well.</p>
+
+<h2 id="ok-fine-how-to-actually-do-it">OK, fine… How to actually do it?</h2>
+<p>For normal addresses, an ideal recovery software would roughly do this:</p>
+
+<ul>
+  <li>Use BIP39 with your seed words to recover your master private key</li>
+  <li>Collect the unspent outputs of the address you want to spend from - these are the Bitcoins you’ll send</li>
+  <li>Sign a transaction that sends money from this address to a destination address for your choosing</li>
+</ul>
+
+<p>An example of such tool that automates a lot of this process in the case of Bitcoin Cash and Bitcoin Gold forks is <a href="https://github.com/shesek/bcash-instadump">bcash-instadump</a> by Nadav Ivgi.</p>
+
+<p>For P2SH addresses, you’d have to do the same, but when you sign the transaction, you’d provide multiple private keys and the redeem script. This redeem script is easily attainable in good wallets such as Electrum. I had such a case and wrote some code that uses exactly this redeem script to extract Bitcoin Gold using BitcoinJS.</p>
+
+<p>For other types of coins that use this scheme the recovery process is similar in theory, but it usually requires a different set of libraries and wallet software. For instance, in Ethereum, you may use <a href="myetherwallet.com">MyEtherWallet</a> with the derived private keys.</p>
+
+<p>If you have some stuck Zcash, you may notice that the BIP39 tool misses it. That’s actually because of a technical limitation in BitcoinJS - Zcash use an address prefix which is 2 bytes, but BitcoinJS only supports a single-byte address prefixes. I have a hacky-fix from it that I use, but it’s not generic enough to publish.</p>
+
+<p>For some coins (such as Bitcoin Gold), there are also some wallets that supports the import of single-address private keys, but are not open-source. That doesn’t immediately mean the wallet developers are malicious, but it bugs me to use something proprietary like this for sensitive matters like money.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>I hope this post would encourage people to take advantage of the best security practices, such as using a hardware wallet or multi-sig.</p>
+
+<p>In this latest price surge, a lot of new folks come in, techie or otherwise, and are worried of using complex software, but using the easier-to-use ones (such as hardware wallets) feels like being dependent on a specific piece of software. It might feel like you’re losing control of your coins, contrary to the promise of cryptocurrencies.</p>
+
+<p>I hope this post showed you that you’re not actually strongly tied to it - you could always recover from it, given you that you backed up your private keys, or your seed, and required metadata (such as redeem scripts). You can do it yourself or the help of your friendly techier Bitcoiner friend.</p>
+
+<p>There are, of course, other recovery cases which I didn’t cover - such as wallets and coins that don’t use these schemes and other types of coins which require special handling.</p>
+
+<p>To wrap it up, I’d want you to feel free to reach out to me (<a href="mailto:kobigurk@gmail.com">kobigurk@gmail.com</a> or @kobigurk on Twitter) if you have any stuck coins you’d like help with, would like to consult about backing up enough data to be able to recover in the future or wondering about the deeper technical details of how all of this works.</p>
+
+
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://EXAMPLE.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                            
+
+
+				</div>
+			</div>
+    </div>
+		<script type="text/javascript" src="/assets/js/ui.js"></script>
+    
+    <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js"></script>
+		<script src="/assets/js/solidity.js"></script>
+    <script type="text/javascript">
+      hljs.registerLanguage('solidity', window.hljsDefineSolidity);
+      hljs.initHighlightingOnLoad();
+    </script>
+    <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="89b86248-82d0-4a4a-8fd3-59a0088b1ffa";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+  </body>
+</html>

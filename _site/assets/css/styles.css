@@ -1,0 +1,11 @@
+.centeredimg {
+  margin: 1em auto; }
+
+body {
+  font-size: 1.2em; }
+
+a,
+a:link,
+a:visited,
+a:hover {
+  color: #777; }

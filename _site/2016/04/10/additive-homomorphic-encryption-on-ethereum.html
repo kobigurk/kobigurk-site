@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Additive Homomorphic Encryption on Ethereum</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+		<link rel="stylesheet" href="/assets/css/side-menu.css">
+		<link rel="stylesheet" href="/assets/css/styles.css">
+    <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Additive Homomorphic Encryption on Ethereum</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Additive Homomorphic Encryption on Ethereum" />
+<meta name="author" content="Kobi" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down." />
+<meta property="og:description" content="A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down." />
+<link rel="canonical" href="http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" />
+<meta property="og:url" content="http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2016-04-10T00:00:00+03:00" />
+<script type="application/ld+json">
+{"description":"A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.","author":{"@type":"Person","name":"Kobi"},"@type":"BlogPosting","url":"http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html","headline":"Additive Homomorphic Encryption on Ethereum","dateModified":"2016-04-10T00:00:00+03:00","datePublished":"2016-04-10T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2016/04/10/additive-homomorphic-encryption-on-ethereum.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet"
+				href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css">
+
+  </head>
+  <body>
+    <div id="layout">
+			<a href="#menu" id="menuLink" class="menu-link"><span></span></a>
+
+<div id="menu">
+	<div class="pure-menu">
+		<a class="pure-menu-heading" href="#">Kobi Gurkan</a>
+		<ul class="pure-menu-list">
+			
+			<li class="pure-menu-item">
+        <a href="/" class="pure-menu-link" ">Home</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/blog.html" class="pure-menu-link" ">Blog</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/projects.html" class="pure-menu-link" ">Projects</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/presentations.html" class="pure-menu-link" ">Presentations</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/contact.html" class="pure-menu-link" ">Contact</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/pgp.html" class="pure-menu-link" ">PGP key</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://github.com/kobigurk" class="pure-menu-link" target="_blank"">GitHub</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://twitter.com/kobigurk" class="pure-menu-link" target="_blank"">Twitter</a>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+
+			<div id="main">
+				<div class="header">
+					<h3>Additive Homomorphic Encryption on Ethereum</h3>
+				</div>
+				<div class="content">
+					<p>10 Apr 2016 - Kobi</p>
+
+<p>A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.</p>
+
+<p>OK, let’s be serious - private blockchains are in the exploration phase. Financial institutions, insurance firms and many others are finding out how they can use the technology, or at least some of its concepts. One way to look at them is as a specialized database for specific use-cases. Projects like <a href="https://www.hyperledger.org/" target="_blank">HyperLedger</a> and <a href="http://r3cev.com/blog/2016/4/4/introducing-r3-corda-a-distributed-ledger-designed-for-financial-services" target="_blank">Corda</a> build infrastructures that will power some use-cases.</p>
+
+<p>But today I’d like to discuss something a bit different. For quite some time, I’ve been interested in privacy on the blockchain. How can we add some privacy properties to public transactions while still gaining benefit from the underlying blockchain (such as finality, limited auditing, etc)? There are a few interesting ideas, some of them are explored in Vitalik’s blog post about <a href="https://blog.ethereum.org/2016/01/15/privacy-on-the-blockchain/" target="_blank">Privacy on the Blockchain</a>.</p>
+
+<p>#So, what can we do?
+One approach which I wanted to explore is homomorphic encryption. From <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption" target="_blank">Wikipedia</a>:</p>
+<blockquote>
+  <p>Homomorphic encryption is a form of encryption that allows computations to be carried out on ciphertext, thus generating an encrypted result which, when decrypted, matches the result of operations performed on the plaintext.</p>
+</blockquote>
+
+<p>For example, assuming \(ENC\) and \(DEC\) are our encryption and decryption functions respectively, we can have:</p>
+
+<script type="math/tex; mode=display">x\_1=3, x\_2=4 \\\\ 
+c\_1 = ENC(x\_1), c\_2 = ENC(x\_2) \\\\
+c\_3 = F(c\_1, c\_2) \\\\
+ \text{ such that} \\\\
+x\_3 = DEC(c\_3) = x\_1 + x\_2</script>
+
+<p>By performing an operation on the encrypted \(x_1, x_2\) we got their sum.</p>
+
+<p>The “holy grail” of homomorphic encryption is <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption" target="_blank">Fully Homomorphic Encryption</a>, with which you can get results of arbitrary computations on encrypted data, not just their sum or product. One cryptosystem which provides you with <em>additive</em> homomorphic encryption is the <a href="https://en.wikipedia.org/wiki/Paillier_cryptosystem" target="_blank">Paillier Cryptosystem</a>. Additive here means that you can get the sum of two encrypted numbers.</p>
+
+<p>The Paillier Cryptosystem is an asymmetric encryption scheme, meaning that you encrypt with your public key and decrypt with your private key. Leaving the key generation process aside, the parameters we need to use the cryptosystem are:
+<script type="math/tex">\\text{public key} = (n, g) \\\\
+\\text{private key} = (\lambda, \mu)</script>
+The specific meaning of the parameters is not needed for what I want to show, and they’re all the result of the key generation process.</p>
+
+<p><strong>Encryption process</strong>:</p>
+
+<ol>
+  <li>Take \(m\), the number you want to encrypt. \(m\) is a member of \(\mathbb{Z}_n\).</li>
+  <li>Generate a random number \(r\).</li>
+  <li>The encrypted number will be \(c = g^m \cdot r^n \mod n^2\).</li>
+</ol>
+
+<p><strong>Decryption process</strong>:</p>
+
+<ol>
+  <li>Take \(c\), the encrypted number, which is in \(\mathbb{Z}^*_{n^2}\).</li>
+  <li>The decrypted number will be \(m = \frac{(c^{\lambda} \mod n^2) - 1}{n} \cdot \mu \mod n\).</li>
+</ol>
+
+<p>What we’re interested in now is the homomorphic addition property:
+<script type="math/tex">DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2</script></p>
+
+<p>#Homomorphic Encryption in Practice
+So what does that property give us? Let’s look at a specific use case. Let’s assume we have an Ethereum smart contract that manages the expenses of employees:</p>
+
+<ol>
+  <li>Every day, employees submit their expenses to the contract. They don’t wan the other employees to know their expenses, so they encrypt it and send it to the contract.</li>
+  <li>The contract adds the encrypted expense to the current total expenses amount.</li>
+  <li>At the end of every month, the company wants to know the total expenses amount, but doesn’t want anyone else to know it. They take the encrypted total expenses amount from the contract and decrypt it locally.</li>
+</ol>
+
+<p>This would be a contract with my pre-generated parameters and an initial encrypted total expenses amount of 3:</p>
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">contract</span> <span class="nx">paillierBalance</span> <span class="p">{</span>                
+    <span class="nx">uint</span> <span class="nx">nSquared</span><span class="p">;</span>
+    <span class="nx">uint</span> <span class="kr">public</span> <span class="nx">encryptedBalance</span> <span class="o">=</span> <span class="mh">0x2a6a2efecccf5f09e883b87528104e505dedb63fee8de93ccc059116bf32ae5f</span><span class="p">;</span>
+    <span class="nx">uint</span> <span class="kr">public</span> <span class="nx">g</span> <span class="o">=</span> <span class="mh">0xb033814c46b1c673d80ad171adbcf4bc</span><span class="p">;</span>   
+    <span class="nx">address</span> <span class="kr">public</span> <span class="nx">controller</span><span class="p">;</span>
+    <span class="nx">uint</span> <span class="kr">public</span> <span class="nx">n</span> <span class="o">=</span> <span class="mh">0xb033814c46b1c673d80ad171adbcf4bb</span><span class="p">;</span>
+      
+    <span class="kd">function</span> <span class="nx">paillierBalance</span><span class="p">()</span> <span class="p">{</span>                                      
+        <span class="nx">controller</span> <span class="o">=</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">sender</span><span class="p">;</span>
+        <span class="nx">uint</span> <span class="nx">nSquaredTemp</span><span class="p">;</span>
+        <span class="nx">uint</span> <span class="nx">nInner</span> <span class="o">=</span> <span class="nx">n</span><span class="p">;</span>
+        <span class="nx">assembly</span> <span class="p">{</span>
+            <span class="kd">let</span> <span class="nx">_n</span> <span class="p">:</span><span class="o">=</span> <span class="nx">nInner</span>
+            <span class="nx">nSquaredTemp</span> <span class="p">:</span><span class="o">=</span> <span class="nx">exp</span><span class="p">(</span><span class="nx">_n</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="nx">nSquared</span> <span class="o">=</span> <span class="nx">nSquaredTemp</span><span class="p">;</span>
+    <span class="p">}</span>
+                                 
+    <span class="nx">modifier</span> <span class="nx">onlyController</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">msg</span><span class="p">.</span><span class="nx">sender</span> <span class="o">!=</span> <span class="nx">controller</span><span class="p">)</span> <span class="k">throw</span><span class="p">;</span>  
+        <span class="nx">_</span>
+    <span class="p">}</span>
+
+    <span class="kd">function</span> <span class="nx">homomorphicAdd</span><span class="p">(</span><span class="nx">uint</span> <span class="nx">encryptedChange</span><span class="p">)</span> <span class="nx">onlyController</span> <span class="p">{</span>
+        <span class="nx">uint</span> <span class="nx">encryptedBalanceInner</span> <span class="o">=</span> <span class="nx">encryptedBalance</span><span class="p">;</span>              
+        <span class="nx">uint</span> <span class="nx">nSquaredInner</span> <span class="o">=</span> <span class="nx">nSquared</span><span class="p">;</span>              
+        <span class="nx">uint</span> <span class="nx">encryptedBalanceTemp</span><span class="p">;</span>                                          
+        <span class="nx">assembly</span> <span class="p">{</span>
+            <span class="kd">let</span> <span class="nx">_encryptedBalance</span> <span class="p">:</span><span class="o">=</span> <span class="nx">encryptedBalanceInner</span>                  
+            <span class="kd">let</span> <span class="nx">_encryptedChange</span> <span class="p">:</span><span class="o">=</span> <span class="nx">encryptedChange</span>             
+            <span class="kd">let</span> <span class="nx">_nSquared</span> <span class="p">:</span><span class="o">=</span> <span class="nx">nSquaredInner</span>                  
+            <span class="nx">encryptedBalanceTemp</span> <span class="p">:</span><span class="o">=</span> <span class="nx">mulmod</span><span class="p">(</span><span class="nx">_encryptedBalance</span><span class="p">,</span> <span class="nx">_encryptedChange</span><span class="p">,</span><span class="nx">_nSquared</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="nx">encryptedBalance</span> <span class="o">=</span> <span class="nx">encryptedBalanceTemp</span><span class="p">;</span>                            
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The encryption and decryption would be client side, using a <a href="https://github.com/kobigurk/paillier" target="_blank">python paillier library</a>. That means that the company first encrypts the initial balance, and whenever the employees want to report the expense, they use the <strong>homomorphicAdd</strong> function. This function uses the homomorphic addition property to store the result of the sum of the previous balance and the new expense.</p>
+
+<p>In this manner, the contract has only one storage variable for the balance while employees can report an unlimited number of expenses.</p>
+
+<p>#Conclusion
+To summarize, this shows a method with which we can preserve privacy while still have some auditing properties. In this example, people can know that they can trust that the final encrypted balance represents the sum of all of the expenses reliably.</p>
+
+<p>What kind of businesses would use methods like this? Time will tell. This is the moment that companies can be creative and find out new ways to architect their systems to work in a more transparent and efficient world.</p>
+
+<p>All in all, I feel there is a great potential in using this kind of methods and I would love to discuss ideas. Feel free to <a href="/contact.html">contact me</a>!</p>
+
+
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://EXAMPLE.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                            
+
+
+				</div>
+			</div>
+    </div>
+		<script type="text/javascript" src="/assets/js/ui.js"></script>
+    
+    <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js"></script>
+		<script src="/assets/js/solidity.js"></script>
+    <script type="text/javascript">
+      hljs.registerLanguage('solidity', window.hljsDefineSolidity);
+      hljs.initHighlightingOnLoad();
+    </script>
+    <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="89b86248-82d0-4a4a-8fd3-59a0088b1ffa";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+  </body>
+</html>

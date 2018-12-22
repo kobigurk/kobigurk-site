@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Zero-Knowledge taxation on Ethereum</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+		<link rel="stylesheet" href="/assets/css/side-menu.css">
+		<link rel="stylesheet" href="/assets/css/styles.css">
+    <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Zero-Knowledge taxation on Ethereum</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Zero-Knowledge taxation on Ethereum" />
+<meta name="author" content="Kobi" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018." />
+<meta property="og:description" content="At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018." />
+<link rel="canonical" href="http://localhost:4000/2018/06/24/zkp-qed-ethereum.html" />
+<meta property="og:url" content="http://localhost:4000/2018/06/24/zkp-qed-ethereum.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-06-24T00:00:00+03:00" />
+<script type="application/ld+json">
+{"description":"At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.","author":{"@type":"Person","name":"Kobi"},"@type":"BlogPosting","url":"http://localhost:4000/2018/06/24/zkp-qed-ethereum.html","headline":"Zero-Knowledge taxation on Ethereum","dateModified":"2018-06-24T00:00:00+03:00","datePublished":"2018-06-24T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2018/06/24/zkp-qed-ethereum.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet"
+				href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css">
+
+  </head>
+  <body>
+    <div id="layout">
+			<a href="#menu" id="menuLink" class="menu-link"><span></span></a>
+
+<div id="menu">
+	<div class="pure-menu">
+		<a class="pure-menu-heading" href="#">Kobi Gurkan</a>
+		<ul class="pure-menu-list">
+			
+			<li class="pure-menu-item">
+        <a href="/" class="pure-menu-link" ">Home</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/blog.html" class="pure-menu-link" ">Blog</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/projects.html" class="pure-menu-link" ">Projects</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/presentations.html" class="pure-menu-link" ">Presentations</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/contact.html" class="pure-menu-link" ">Contact</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/pgp.html" class="pure-menu-link" ">PGP key</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://github.com/kobigurk" class="pure-menu-link" target="_blank"">GitHub</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://twitter.com/kobigurk" class="pure-menu-link" target="_blank"">Twitter</a>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+
+			<div id="main">
+				<div class="header">
+					<h3>Zero-Knowledge taxation on Ethereum</h3>
+				</div>
+				<div class="content">
+					<p>24 Jun 2018 - Kobi</p>
+
+<p>At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more.</p>
+
+<p>We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.</p>
+
+<!--more-->
+
+<p>Watch the talk by Jonathan Rouach, our CEO, at ZCon0:</p>
+<style>.embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; } .embed-container iframe, .embed-container object, .embed-container embed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }</style>
+<div class="embed-container">    <iframe title="YouTube video player" width="640" height="390" src="//www.youtube.com/embed/OTO4JCJZD2o" frameborder="0" allowfullscreen=""></iframe></div>
+
+<h1 id="use-case">Use-case</h1>
+
+<p>It is common for a person to purchase a life insurance contract from an insurer. The person then performs deposits to this contract. In “investment-type” contracts, these deposits are invested by the insurer in different investment vehicles, possibly earning gains.</p>
+
+<p>At some point, the person would like to withdraw their money from the insurer. The question arises - how should these gains be taxed, before paying to the person?</p>
+
+<p>This is where a friction point arises - the new 2018 french tax law binds the calculation of the tax to the <em>accumulated value</em> of all life insurance contracts held by the beneficiary.</p>
+
+<p>When the person has contracts with a single insurer, then, naturally, all the data relevant for calculating the tax is held by this insurer. Since it is also possible for a person to purchase life insurance contracts from multiple insurers, a person might not want to expose this highly personal data to the insurer the person is withdrawing from.</p>
+
+<p>What if we had a system, allowing a person to use all of the life insurance contracts from their insurers, and calculate the tax the insurer should pay, without leaking information about other contracts at other insurers?</p>
+
+<h1 id="zero-knowledge-proofs">Zero-knowledge proofs</h1>
+
+<p>Zero-knowledge proofs (ZKPs) allow a verifier to pose a question to a prover, and the prover answers this question, using whatever private data needed to answer it, revealing nothing more than the answer to the question itself.</p>
+
+<p>An example of a question a verifier could pose is “do you know the solution to the following Sudoku puzzle?”. Obviously, the prover who knows the solution can show the solution itself. This prover, though, would like to keep the solution secret for now, but convince the verifier that they do know the solution. The prover can use a zero-knowledge proof to just answer “yes”! The cryptographic proof also serves for convincing the verifier that the right question was used on the right data and no one altered the result.</p>
+
+<p>zkSNARKs are, amongst other properties, a way to do this process:</p>
+<ol>
+  <li><em>Non-interactively</em> - without a direct interaction between the prover and the verifier.</li>
+  <li><em>Succinctly</em> - the proofs are very small.</li>
+</ol>
+
+<p>Explaining zero-knowledge proofs in depth is beyond the scope of this post, and if you wish to know more, I invite you to check out the following resources:</p>
+
+<ol>
+  <li><a href="https://qed-it.com/2017/06/08/trustless-computing/">Trustless Computing on Private Data</a> - blog post by QED‐it’s lead cryptographer Daniel Benarroch and Prof. Aviv Zohar.</li>
+  <li><a href="https://qed-it.com/2017/07/04/zkp-in-action/">Prove-it, Blockchain-it: ZKP in Action</a> - a video of a meetup explaining ZKPs and how to create one for Sudoku.</li>
+  <li><a href="https://qed-it.com/2017/12/20/the-incredible-machine/">The Incredible Machine</a> - blog post by QED‐it’s Chief Scientist Prof. Aviv Zohar, explaining trusted setup.</li>
+  <li><a href="https://qed-it.com/2017/07/11/the-hunting-of-the-snark/">The Hunting of the SNARK</a> - a series of riddles to experiment with ZKPs.</li>
+</ol>
+
+<h1 id="the-project">The project</h1>
+
+<h2 id="qed-it-sdk">QED-it SDK</h2>
+<p>At the heart of the QED‐it SDK is an <em>identity</em> protocol. This protocol serves as a framework for committing to data by issuers, attesting pieces of data about a user, and allowing an auditor to pose audit questions to this user. The user, in turn, generates a zero-knowledge proof that combines the data inputs and uses a computation on them to answer the audit question.</p>
+
+<p>The QED‐it SDK provides this protocol adapted to families of use-cases, especially the ones discussed and deemed important in the recent <a href="https://zkproof.org">Zero Knowledge Proof Standardization</a> workshop. The adaptations includes a set of building blocks for each of these families, allowing an auditor to pose increasingly complex audit questions.</p>
+
+<p>Why is it called an SDK? Well, the SDK allows developers to write “hooks” - their own audit questions using a Domain-Specific Language. The encompassing protocols provide the security guarantees required by most of the use-cases.</p>
+
+<h2 id="high-level-design">High-level design</h2>
+
+<p>Let’s start with a diagram describing the system:</p>
+
+<p><img src="/assets/images/zkpqed1.jpeg" alt="System diagram" style="width: 100%" /></p>
+
+<p>User, Insurer 1 and Insurer 2 are QED‐it nodes. The nodes give the ability to publish commitments about bits of data and generate ZKPs in response to audit questions.</p>
+
+<p>Step-by-step (using the numbering of the diagram), this is how a possible system communication scenario looks like:</p>
+<ol>
+  <li>
+    <p>Insurer 1 sends the life insurance contract to the user, attesting to the contract between them.</p>
+  </li>
+  <li>
+    <p>Insurer 1 publishes commitments, in the form of hashes, of the contract. These are small values not exposing any information about the contract itself.</p>
+  </li>
+  <li>
+    <p>(This covers 3-8). The commitments are propagated throughout the network. Additionally, Insurer 2 does the same publishing steps as Insurer 1.</p>
+  </li>
+  <li>The user requests to leave Insurer 2. The insurer has to pay the gains to the user, minus the taxes owed for them. In order to know the tax amounts, the insurer poses an audit question to the user - “given your life insurance contracts at all of your insurers, what is the tax amount that should be paid for the gains for the deposits you made to us?”</li>
+  <li>
+    <p>The user collects all their life insurance contracts, and generates a zero-knowledge proof of the calculated tax amounts.</p>
+  </li>
+  <li>After receiving the ZKP, Insurer 2 pays the user, minus the taxes on the gains according to the law, all this without knowing any details about the other life insurance contracts the user holds! (Except, of course, what can be inferred from the audit question itself)</li>
+</ol>
+
+<p>I’d like to highlight an important fact which may not be obvious - throughout this process, the data, once collected by the user, never left the user’s node! Still, the user can calculate by themselves the tax rates, with the insurer being certain that the result is correct.</p>
+
+<p>In a centralized world, in order for the insurers to comply with the law, they must have more information, and so the user usually provides it to them. In the QED-it world, it’s not like that anymore! The users perform the math on their own machines, and they just need the right infrastructure to support this - users running QED-it nodes to generate ZKPs and insurers committing data and verifying proofs.</p>
+
+<h2 id="modularization-and-domain-specific-language-dsl">Modularization and Domain-Specific Language (DSL)</h2>
+
+<p>QED‐it’s SDK allows users to write their “business-logic” proofs both in our embedded DSL and and other external DSLs - languages for the domain of Zero-Knowledge Proofs.</p>
+
+<p>The main requirement for this integration is that the proofs conform to the <em>proof-chaining</em> specification. Proof-chaining is a technique we’ve implemented that allows a prover to connect different proofs parts, even between different proof systems. This allows the DSL proofs to be connected  with the other parts of the QED‐it’s proofs and protocol.</p>
+
+<p>A bit more in-depth, the proof in this use-case is modularized to multiple proofs, “glued” together:</p>
+
+<ul>
+  <li><em>Data validity proofs.</em> These promise:
+    <ol>
+      <li>The data has been published before by one of the approved parties, and existed by block X, referenced by a “merkle root” of the merkle tree generated by all the published commitments.</li>
+      <li>The data has not been revoked by block Y.</li>
+      <li>The subset of the data that will be chained to the next proof has been generated correctly, referenced by a hiding commitment to it.</li>
+    </ol>
+
+    <p>As you may notice, we’ve introduced a new concept here, a Merkle tree. Specifically, the commitments in the system are collected in an append-only Merkle tree - a data structure that has efficient proofs for “set membership” -given a set S and an element x, you can efficiently show x is an element in the set S.</p>
+  </li>
+  <li><em>Tax proof.</em> This is the proof containing the specific business logic of the proof, which in this case means the calculation of the tax amounts. This proof assumes the data inputs have been validated by other proofs. This assumption causes this proof to be very small and efficient!</li>
+</ul>
+
+<p>The different proof components are connected by what we call a glue.</p>
+
+<p>The verification protocol then, in addition to verifying that the merkle roots existed in the past, includes verification of the “glue” components between the different proofs.</p>
+
+<p>The calculation of tax amounts in the <em>Tax Proof</em> has been written by Alizée Faytre, who has been the developer in Deloitte working on the project under the supervision of Ossama Benbouidda and Julien Maldonato, using <a href="https://github.com/JacobEberhardt/ZoKrates">ZoKrates</a> — a Python-like high level language that compiles into zkSNARKs.</p>
+
+<h2 id="external-verifiers">External verifiers</h2>
+
+<p>An important part of this project was allowing an external party who is not running a QED‐it node to enjoy the results of the zero-knowledge proof generated by the user’s QED‐it node.</p>
+
+<p>To do that, we chose to deeply integrate with an Ethereum network, which, since the <a href="https://blog.ethereum.org/2017/10/12/byzantium-hf-announcement/">Byzantium hard-fork</a>, allowing zkSNARKs proofs verification by providing precompiles for efficient evaluation of elliptic curve operations on the BN128 curve. In short, this means that we can generate proofs using a QED-it node and verify them in a decentralized manner on the Ethereum blockchain.</p>
+
+<p>We implemented a smart contract that essentially acts as an autonomous verifier. This smart contract allows the different parties to publish commitments that will be collected in an incremental merkle tree, and run the verification protocol on the bundle of proofs generated by the user.</p>
+
+<p>This allows, for example, for a smart contract managing the wallet of the insurer, to consume the tax proofs, pay the taxes to the government and pay the user minus the tax. This coincides with our vision of real-time regulation compliance.</p>
+
+<h2 id="the-system-in-action">The system in action</h2>
+
+<p>We deployed the system comprising a set of 6 nodes - 5 insurers and 1 user, running a Proof-of-Authority Ethereum network. These parties run QED‐it nodes and have the ability to generate these proofs, using our own efficient data validity proofs and to generate the tax proof using ZoKrates.</p>
+
+<p>The nodes are easily deployable using Docker and are exposing an HTTP API to be easily integrated with.</p>
+
+<p>Along with its node, comes QED-it’s explorer tool, that realizes our vision of a ZKP monitoring system and allows operators of nodes to monitor the activity of their nodes, just like a block explorer allows one to monitor a blockchain. This is how the process looks like there:</p>
+
+<ul>
+  <li>Data report by an insurer:
+<img src="/assets/images/zkpqed2.png" alt="Data report" style="width: 100%" /></li>
+  <li>Commitment publish by an insurer:
+<img src="/assets/images/zkpqed3.png" alt="Commitment publish" style="width: 100%" /></li>
+  <li>Tax calculation result:
+<img src="/assets/images/zkpqed4.png" alt="Audit" style="width: 100%" /></li>
+</ul>
+
+<h2 id="challenges">Challenges</h2>
+
+<p>This project uses bleeding-edge technology, and as you can imagine, it posed a few challenges:</p>
+
+<ol>
+  <li>The smart contract implementing the autonomic verifier has to maintain a history of “known merkle roots” - each time a commitment is published to the contract, the new root should be calculated and kept.</li>
+</ol>
+
+<p>Doing this naively is an issue - as this is an incremental tree, commitments are never deleted, so it’s best to use as large as possible tree. We chose a tree of depth 30, supporting about a billion of commitments. Managing this large a tree directly in a smart contract is not practical.</p>
+
+<p>To cope with that, we implemented an efficient incremental merkle tree in Solidity.</p>
+
+<ol>
+  <li>The gas requirements for the pairing operations needed to verify proofs are pretty high - verifying a single proof consumes about 2 million gas.</li>
+</ol>
+
+<p>This is where the different trade-offs between the systems come into friction - on the one hand, modularization of proofs allows for more versatile, practical and secure proofs, and on the other hand, we would like to minimize the amount of gas used in the contract.</p>
+
+<p>There are possibilities to make good trade-offs - using different modularization techniques, combining proofs using <a href="http://eprint.iacr.org/2012/095">Proof-Carrying Data</a> and many more. In a private Ethereum network, it even becomes a non-issue, with the ability to introduce new precompiles.</p>
+
+<p>Also, there are proposals to decrease the amount of gas, which will improve this situation.</p>
+
+<ol>
+  <li>The glue component in the tax proof requires the use of hashes in ZoKrates. We have made efforts to integrate efficient external circuits and are hoping to collaborate with the ZoKrates team to make more integration possibilities a reality.</li>
+</ol>
+
+<h1 id="summary">Summary</h1>
+
+<p>In this post, we’ve seen an end-to-end zero-knowledge system to allow real-time taxation with exposing the user’s private data. This is just scratching the surface of the possibilities of practically using zero-knowledge proofs and other privacy preserving tools, in which we specialize in QED‐it.</p>
+
+<p>Of course, many technical details have been omitted for brevity, and there’s much more to the story. I invite you to write to us at <a href="mailto:info@qed-it.com">info@qed-it.com</a> to learn more about the SDK.</p>
+
+<p>If you’re attending <a href="https://z.cash.foundation/zcon/">ZCon0</a>, you’re welcome to meet some of our team and attend our CEO’s talk about “Zero Knowledge In The Enterprise” on day 2 at 9:10AM and the ZKProof workshop on the same day at 1PM, lead by our Daniel Benarroch and Eran Tromer.</p>
+
+<p>We are also <a href="https://qed-it.com/jobs/">hiring</a>!</p>
+
+<p>I hope this has been enjoyable, and that it ignites the imagination as to what is now possible in a privacy preserving world!</p>
+
+
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://EXAMPLE.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                            
+
+
+				</div>
+			</div>
+    </div>
+		<script type="text/javascript" src="/assets/js/ui.js"></script>
+    
+    <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js"></script>
+		<script src="/assets/js/solidity.js"></script>
+    <script type="text/javascript">
+      hljs.registerLanguage('solidity', window.hljsDefineSolidity);
+      hljs.initHighlightingOnLoad();
+    </script>
+    <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="89b86248-82d0-4a4a-8fd3-59a0088b1ffa";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+  </body>
+</html>
