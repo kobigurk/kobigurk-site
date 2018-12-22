@@ -14,3 +14,5 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-youtube
+
+baseurl: /_site
