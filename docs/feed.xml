@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-22T18:24:32+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-24T09:58:28+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
 
 &lt;p&gt;As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
 Specifically, succinct and non-interactive ones.&lt;/p&gt;
@@ -71,7 +71,7 @@ Tau known to the prover — it’s very easy to forge a proof!&lt;/p&gt;
 &lt;p&gt;Let’s take a quick look at the construction presented in
 &lt;a href=&quot;http://eprint.iacr.org/2013/879&quot; target=&quot;_blank&quot;&gt;BCTV14a&lt;/a&gt;:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png&quot; alt=&quot;&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/images/fake1.png&quot; alt=&quot;&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:&lt;/p&gt;
 
@@ -109,7 +109,7 @@ and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/800/1*GF6Dl1SG775X5jMQM7mBJw.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;H(z) = \sum{h_i \cdot z^i }&lt;/script&gt;&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
@@ -122,7 +122,7 @@ and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/1000/1*i554Rzu3zkesrkaxwzMnSw.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;{pk}_{H_i} = \tau^i \cdot G_i&lt;/script&gt;&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
@@ -135,7 +135,7 @@ and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;https://cdn-images-1.medium.com/max/1000/1*QOOWLUY60c2gyhOFkRLlMg.gif&quot; alt=&quot;&quot; /&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1&lt;/script&gt;&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
@@ -170,7 +170,7 @@ Wu’s &lt;a href=&quot;https://github.com/howardwu/libsnark-tutorial&quot; targ
 for yourself the changes made to the code:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;The program sets up a circuit for bit-decomposition — although it c.&lt;/li&gt;
+  &lt;li&gt;The program sets up a circuit for bit-decomposition — this is an example, and it could have been any circuit.&lt;/li&gt;
   &lt;li&gt;The setup process maliciously saves Tau to disk.&lt;/li&gt;
   &lt;li&gt;The prover loads Tau from disk, and uses wrong inputs to the proof. The prover,
 knowing Tau, generates the constant polynomial, disregarding the inputs.&lt;/li&gt;
@@ -181,10 +181,7 @@ knowing Tau, generates the constant polynomial, disregarding the inputs.&lt;/li&
 
 &lt;p&gt;I hope this post provided some insight into what is this “toxic waste” that
 everyone has been talking about regarding zkSNARKs, and why having it exposed
-leads to an easily executable attack vector.&lt;/p&gt;
-
-&lt;p&gt;Hey — want to work on zkSNARKs and distributed systems? We are
-&lt;a href=&quot;https://qed-it.com/jobs/&quot; target=&quot;_blank&quot;&gt;hiring&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?</summary></entry><entry><title type="html">Zero-Knowledge taxation on Ethereum</title><link href="/2018/06/24/zkp-qed-ethereum.html" rel="alternate" type="text/html" title="Zero-Knowledge taxation on Ethereum" /><published>2018-06-24T00:00:00+03:00</published><updated>2018-06-24T00:00:00+03:00</updated><id>/2018/06/24/zkp-qed-ethereum</id><content type="html" xml:base="/2018/06/24/zkp-qed-ethereum.html">&lt;p&gt;At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more.&lt;/p&gt;
+leads to an easily executable attack.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?</summary></entry><entry><title type="html">Zero-Knowledge taxation on Ethereum</title><link href="/2018/06/24/zkp-qed-ethereum.html" rel="alternate" type="text/html" title="Zero-Knowledge taxation on Ethereum" /><published>2018-06-24T00:00:00+03:00</published><updated>2018-06-24T00:00:00+03:00</updated><id>/2018/06/24/zkp-qed-ethereum</id><content type="html" xml:base="/2018/06/24/zkp-qed-ethereum.html">&lt;p&gt;At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more.&lt;/p&gt;
 
 &lt;p&gt;We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.&lt;/p&gt;
 

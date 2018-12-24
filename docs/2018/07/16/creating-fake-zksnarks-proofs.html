@@ -151,7 +151,7 @@ Tau known to the prover — it’s very easy to forge a proof!</p>
 <p>Let’s take a quick look at the construction presented in
 <a href="http://eprint.iacr.org/2013/879" target="_blank">BCTV14a</a>:</p>
 
-<p><img src="https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png" alt="" style="width: 100%" /></p>
+<p><img src="/assets/images/fake1.png" alt="" style="width: 100%" /></p>
 
 <p>It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:</p>
 
@@ -189,7 +189,7 @@ and create <script type="math/tex">H(\tau)</script>.</p>
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/800/1*GF6Dl1SG775X5jMQM7mBJw.gif" alt="" /></th>
+      <th style="text-align: center"><script type="math/tex">H(z) = \sum{h_i \cdot z^i }</script></th>
     </tr>
   </thead>
   <tbody>
@@ -202,7 +202,7 @@ and create <script type="math/tex">H(\tau)</script>.</p>
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/1000/1*i554Rzu3zkesrkaxwzMnSw.gif" alt="" /></th>
+      <th style="text-align: center"><script type="math/tex">{pk}_{H_i} = \tau^i \cdot G_i</script></th>
     </tr>
   </thead>
   <tbody>
@@ -215,7 +215,7 @@ and create <script type="math/tex">H(\tau)</script>.</p>
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><img src="https://cdn-images-1.medium.com/max/1000/1*QOOWLUY60c2gyhOFkRLlMg.gif" alt="" /></th>
+      <th style="text-align: center"><script type="math/tex">\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1</script></th>
     </tr>
   </thead>
   <tbody>
@@ -250,7 +250,7 @@ Wu’s <a href="https://github.com/howardwu/libsnark-tutorial" target="_blank">l
 for yourself the changes made to the code:</p>
 
 <ol>
-  <li>The program sets up a circuit for bit-decomposition — although it c.</li>
+  <li>The program sets up a circuit for bit-decomposition — this is an example, and it could have been any circuit.</li>
   <li>The setup process maliciously saves Tau to disk.</li>
   <li>The prover loads Tau from disk, and uses wrong inputs to the proof. The prover,
 knowing Tau, generates the constant polynomial, disregarding the inputs.</li>
@@ -261,10 +261,7 @@ knowing Tau, generates the constant polynomial, disregarding the inputs.</li>
 
 <p>I hope this post provided some insight into what is this “toxic waste” that
 everyone has been talking about regarding zkSNARKs, and why having it exposed
-leads to an easily executable attack vector.</p>
-
-<p>Hey — want to work on zkSNARKs and distributed systems? We are
-<a href="https://qed-it.com/jobs/" target="_blank">hiring</a>!</p>
+leads to an easily executable attack.</p>
 
 
 
