@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-24T09:58:28+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-24T10:04:51+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
 
 &lt;p&gt;As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
 Specifically, succinct and non-interactive ones.&lt;/p&gt;
@@ -63,7 +63,7 @@ and destroys their randomness for the whole process to be secure.&lt;/p&gt;
 
 &lt;p&gt;You might notice this “Tau” that popped up there…&lt;/p&gt;
 
-&lt;p&gt;Not to insult any random element — Tau is very important to be kept secret With
+&lt;p&gt;Not to insult any random element — Tau is very important to be kept secret. With
 Tau known to the prover — it’s very easy to forge a proof!&lt;/p&gt;
 
 &lt;h3 id=&quot;creating-a-proof&quot;&gt;Creating a proof&lt;/h3&gt;
@@ -101,7 +101,7 @@ exact same value at that point.&lt;/p&gt;
 
 &lt;p&gt;How can we technically do that? By the fact that part of the setup process
 generated elements containing all the relevant powers of Tau, hidden in the
-exponent, given as pk_Hi. If we have the coefficients of H, we can combine these
+exponent, given as &lt;script type=&quot;math/tex&quot;&gt;pk_{H_i}&lt;/script&gt;. If we have the coefficients of H, we can combine these
 and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p&gt;
 
 &lt;p&gt;More specifically:&lt;/p&gt;
