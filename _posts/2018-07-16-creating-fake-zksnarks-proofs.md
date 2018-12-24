@@ -66,7 +66,7 @@ Some notable examples of using MPCs to do trusted setup are again, by Zcash:
 
 You might notice this “Tau” that popped up there…
 
-Not to insult any random element — Tau is very important to be kept secret With
+Not to insult any random element — Tau is very important to be kept secret. With
 Tau known to the prover — it’s very easy to forge a proof!
 
 ### Creating a proof
@@ -102,7 +102,7 @@ exact same value at that point.
 
 How can we technically do that? By the fact that part of the setup process
 generated elements containing all the relevant powers of Tau, hidden in the
-exponent, given as pk_Hi. If we have the coefficients of H, we can combine these
+exponent, given as $$pk_{H_i}$$. If we have the coefficients of H, we can combine these
 and create $$H(\tau)$$.
 
 More specifically:
