@@ -74,7 +74,7 @@ Tau known to the prover — it’s very easy to forge a proof!
 Let’s take a quick look at the construction presented in
 [BCTV14a](http://eprint.iacr.org/2013/879){:target="_blank"}:
 
-![](https://cdn-images-1.medium.com/max/800/1*dnAJcVRk2Oagos7wtvnnhw.png){:style="width: 100%"}
+![](/assets/images/fake1.png){:style="width: 100%"}
 
 It’s math-heavy, so let’s cherry-pick bits of details relevant to this post:
 
@@ -107,17 +107,17 @@ and create $$H(\tau)$$.
 
 More specifically:
 
-| ![](https://cdn-images-1.medium.com/max/800/1*GF6Dl1SG775X5jMQM7mBJw.gif) |
+| $$H(z) = \sum{h_i \cdot z^i }$$ |
 |:--:| 
 | Calculated H(z) by the prover |
 {: .centeredimg}
 
-| ![](https://cdn-images-1.medium.com/max/1000/1*i554Rzu3zkesrkaxwzMnSw.gif) |
+| $${pk}_{H_i} = \tau^i \cdot G_i$$ |
 |:--:| 
 | Taken from the proving key, calculated in the setup process |
 {: .centeredimg}
 
-| ![](https://cdn-images-1.medium.com/max/1000/1*QOOWLUY60c2gyhOFkRLlMg.gif) |
+| $$\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1$$ |
 |:--:| 
 | Evaluating $$H(\tau)$$ “in-the-exponent” |
 {: .centeredimg}
@@ -146,7 +146,7 @@ code](https://github.com/QED-it/libsnark-tutorial_forge_proof){:target="_blank"}
 Wu’s [libsnark-tutorial](https://github.com/howardwu/libsnark-tutorial){:target="_blank"}, and see
 for yourself the changes made to the code:
 
-1.  The program sets up a circuit for bit-decomposition — although it c.
+1.  The program sets up a circuit for bit-decomposition — this is an example, and it could have been any circuit.
 1.  The setup process maliciously saves Tau to disk.
 1.  The prover loads Tau from disk, and uses wrong inputs to the proof. The prover,
 knowing Tau, generates the constant polynomial, disregarding the inputs.
@@ -156,7 +156,4 @@ knowing Tau, generates the constant polynomial, disregarding the inputs.
 
 I hope this post provided some insight into what is this “toxic waste” that
 everyone has been talking about regarding zkSNARKs, and why having it exposed
-leads to an easily executable attack vector.
-
-Hey — want to work on zkSNARKs and distributed systems? We are
-[hiring](https://qed-it.com/jobs/){:target="_blank"}!
+leads to an easily executable attack.
