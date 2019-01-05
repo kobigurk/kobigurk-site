@@ -1,3 +1,6 @@
+- name: privacypass-rs
+  link: https://github.com/kobigurk/privacypass-rs
+  description: A fully-compatible implementation of Privacy Pass in Rust, as described in the blog post - https://kobigurk/2019/01/05/exploring-privacypass.html.
 - name: Sapling address tools
   link: https://sapling.kobi.one/
   description: Zcash, since Sapling, supports the concept of diversified addresses. These are addresses derived from the same secret key, and are unlinkable among each other. The official Zcash client supports these addresses, but cannot generate them currently. This tool bridges this gap and can generate multiple addresses for the same key.
@@ -16,4 +19,4 @@
 - name: War on Ether (inactive)
   description: Blockchain-based competitive game, similar to Core Wars.
 - name: TheDAOWisdom (inactive)
-  description: TheDAO price ticker from different exchanges. 
+  description: TheDAO price ticker from different exchanges.
