@@ -1,4 +1,152 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2018-12-26T07:44:45+02:00</updated><id>/feed.xml</id><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2019-01-05T17:20:01+02:00</updated><id>/feed.xml</id><entry><title type="html">Exploring Privacy Pass</title><link href="/2019/01/05/exploring-privacypass.html" rel="alternate" type="text/html" title="Exploring Privacy Pass" /><published>2019-01-05T00:00:00+02:00</published><updated>2019-01-05T00:00:00+02:00</updated><id>/2019/01/05/exploring-privacypass</id><content type="html" xml:base="/2019/01/05/exploring-privacypass.html">&lt;p&gt;This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a &lt;a href=&quot;https://github.com/kobigurk/privacypass-rs&quot; target=&quot;_blank&quot;&gt;fully-compatible implementation of Privacy Pass in Rust&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;privacy-in-the-internet&quot;&gt;Privacy in the internet&lt;/h2&gt;
+
+&lt;p&gt;Privacy for users in the internet is often advocated for, and just as often, compromised. This happens for good reasons - creating social networks (i.e., Facebook), allowing smarter usage of our data (i.e., Gmail), convenience of usage (i.e., OAuth - “Login using Google”), Security (i.e., Cloudflare’s HTTPS-for-every-site and Denial-of-Service protection) and many other reasons.&lt;/p&gt;
+
+&lt;p&gt;The privacy loss is usually not absolute - it allows privacy against some adversaries. For example, while Facebook has access to your personal data, it takes the responsibility of not exposing it to other users, and does it pretty well.&lt;/p&gt;
+
+&lt;p&gt;It makes me glad when these services which potentially compromise privacy also take additional steps to re-introduce it in creative ways.&lt;/p&gt;
+
+&lt;h2 id=&quot;cloudflares-crypto-week&quot;&gt;Cloudflare’s Crypto Week&lt;/h2&gt;
+&lt;p&gt;One of the companies whose trade-offs I like is Cloudflare. I’ve been using their service for many years to easily introduce HTTPS to my websites without having to go through the usual complex processes of obtaining and managing an HTTPS certificate.&lt;/p&gt;
+
+&lt;p&gt;A few weeks ago, Cloudflare had a &lt;a href=&quot;https://blog.cloudflare.com/tag/crypto-week/&quot; target=&quot;_blank&quot;&gt;Crypto Week&lt;/a&gt;, where each day they posted about newly-developed features, who use cryptography to improve their services, in aspects such as privacy.&lt;/p&gt;
+
+&lt;p&gt;Although not part of the Crypto Week, this exposed me to a protocol Cloudflare supports since 2017 - &lt;a href=&quot;https://blog.cloudflare.com/cloudflare-supports-privacy-pass/&quot; target=&quot;_blank&quot;&gt;Privacy Pass&lt;/a&gt;. This protocol has been developed in collboration with academic researchers and is provided as a service by Cloudflare.&lt;/p&gt;
+
+&lt;h2 id=&quot;privacy-pass&quot;&gt;Privacy Pass&lt;/h2&gt;
+
+&lt;p&gt;The Privacy Pass protocol, &lt;a href=&quot;https://captcha.website/&quot; target=&quot;_blank&quot;&gt;as implemented in Cloudflare&lt;/a&gt;, attempts solving the following tension:&lt;/p&gt;
+
+&lt;p&gt;Cloudflare would like to give access to websites to humans rather than, let’s say, mal-intentioned bots. To do that, Cloudflare requires users to solve a &lt;a href=&quot;https://en.wikipedia.org/wiki/CAPTCHA&quot; target=&quot;_blank&quot;&gt;CAPTCHA&lt;/a&gt; when they have suspicion.
+On the one hand, these challenges protect the websites - no non-humans may access the site. On the other hand, false-positives cause inconvenience to users. That puts the burden on Cloudflare to improve their human-detection capbalities without compromising on security too much.&lt;/p&gt;
+
+&lt;p&gt;This is where Privacy Pass comes in. It allows a user to solve a CAPTCHA once and use this “proof-of-humanity” later on.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-protocol&quot;&gt;The protocol&lt;/h2&gt;
+
+&lt;p&gt;Rather than outlying the protocol directly, I’d like to build it step-by-step, to highlight the importance of each of the components in the protocol, and why stopping at that level might not be enough.&lt;/p&gt;
+
+&lt;h3 id=&quot;methodology&quot;&gt;Methodology&lt;/h3&gt;
+
+&lt;p&gt;Methodology-wise, I believe the best way to understand a topic is being able to teach it. In teaching, there are multiple levels. Two of these are teaching another human (outlying the theory, proofs, math) and teaching a machine (implementing it so it can be used).&lt;/p&gt;
+
+&lt;p&gt;While teaching another human is highly valuable, some aspects are more readily exposed and understood when teaching a machine. This is one of the reasons I’ve chosen to &lt;a href=&quot;https://github.com/kobigurk/privacypass-rs&quot; target=&quot;_blank&quot;&gt;implement Privacy Pass in Rust&lt;/a&gt; - in this way I could see the nitty-gritty details of how Cloudflare and the researchers made Privacy Pass work in practice.&lt;/p&gt;
+
+&lt;h3 id=&quot;detecting-a-human&quot;&gt;Detecting a human&lt;/h3&gt;
+
+&lt;p&gt;Cloudflare uses CAPTCHAs to detect humans when suspicion arises. Essentially, Cloudflare presents a challenge with weird-looking letters and numbers:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/captcha.jpg&quot; alt=&quot;CAPTCHA&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The user then provides the solution to what they think is the solution. If Cloudflare approves it, they allow the user through.&lt;/p&gt;
+
+&lt;p&gt;Recall that the goal of Privacy Pass is to carry this “proof-of-humanity” to other situations where the user might be suspected.&lt;/p&gt;
+
+&lt;p&gt;So why not, let’s say, when Cloudflare receives a correct solution, make Cloudflare send multiple “passes” which can be used in other sites?&lt;/p&gt;
+
+&lt;p&gt;The answer lies in &lt;em&gt;tracking&lt;/em&gt;. When Cloudflare would send these passes to the user, they will know that these passes are related to the original CAPTCHA solution, and by so, to the original website where the user saw the challenge.&lt;/p&gt;
+
+&lt;p&gt;If Cloudflare would have liked, they could track the user across multiple sites. To show a concrete example:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The user, being at home, would have gone to kobigurk.com, see a challenge and solve it, let’s denote the solution &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt;. They would send the solution to Cloudflare, containing the solution &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt; and natually their home IP.&lt;/li&gt;
+  &lt;li&gt;Cloudflare would approve the solution, and send passes &lt;script type=&quot;math/tex&quot;&gt;P_1, ... P_N&lt;/script&gt;. Additionally, they would store in their database the connection between &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt;, each &lt;script type=&quot;math/tex&quot;&gt;P_i&lt;/script&gt; and the user’s IP.&lt;/li&gt;
+  &lt;li&gt;Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass &lt;script type=&quot;math/tex&quot;&gt;P_i&lt;/script&gt; with the user.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Cloudflare could obviously &lt;em&gt;not&lt;/em&gt; store this data, and that would require putting the trust in Cloudflare. While they might deserve it, you can do better.&lt;/p&gt;
+
+&lt;h3 id=&quot;discerete-logarithm-problem&quot;&gt;Discerete Logarithm Problem&lt;/h3&gt;
+
+&lt;p&gt;What if Cloudflare could provide the passes without being able to track their usage forward? Apparently, with some &lt;a href=&quot;http://en.wikipedia.org/wiki/Elliptic_curve_cryptography&quot; target=&quot;_blank&quot;&gt;elliptic-curve cryptography&lt;/a&gt;, it is possible.&lt;/p&gt;
+
+&lt;p&gt;Without diving too much into elliptic-curves, I’ll remind some basic facts.&lt;/p&gt;
+
+&lt;p&gt;Elliptic curves, being curves, have points. You can define the &lt;script type=&quot;math/tex&quot;&gt;+&lt;/script&gt; operation on points, such that given points &lt;script type=&quot;math/tex&quot;&gt;P&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;Q&lt;/script&gt; on the curve, you will get a third point &lt;script type=&quot;math/tex&quot;&gt;R&lt;/script&gt; which is the result of &lt;script type=&quot;math/tex&quot;&gt;P+Q&lt;/script&gt;. To see how to define this visually, you can see it, for example, &lt;a href=&quot;https://www.certicom.com/content/certicom/en/21-elliptic-curve-addition-a-geometric-approach.html&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;You can also define adding a point &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; to itself &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; times (&lt;script type=&quot;math/tex&quot;&gt;G+...+G&lt;/script&gt; with &lt;script type=&quot;math/tex&quot;&gt;n-1&lt;/script&gt; additions). Call this operation &lt;script type=&quot;math/tex&quot;&gt;n \cdot G&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;You can ask, given points &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;, “how many times would I have to add &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; to itself in order to get &lt;script type=&quot;math/tex&quot;&gt;H&lt;/script&gt;?” That is, what is the &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; such that &lt;script type=&quot;math/tex&quot;&gt;n \cdot G = H&lt;/script&gt;? This is a hard problem in elliptic-curve cryptography, called the &lt;a href=&quot;https://en.wikipedia.org/wiki/Discrete_logarithm&quot; target=&quot;_blank&quot;&gt;Discrete Logarithm Problem&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;blind-signatures&quot;&gt;Blind signatures&lt;/h3&gt;
+
+&lt;p&gt;Now we begin solving the problem of tracking. First, let’s expand our protocol and describe it in more detail.&lt;/p&gt;
+
+&lt;p&gt;Let’s say the secret key of the Privacy Pass server is the number &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; and there’s a publicly known point on the curve called &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; and execute the protocol as follows:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The user, requesting passes, will create a random token &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and send the server the point &lt;script type=&quot;math/tex&quot;&gt;t \cdot G&lt;/script&gt;, denoting it &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt;. The server will not be able to know &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; because of the Discrete Logarithm Problem.&lt;/li&gt;
+  &lt;li&gt;The server will create the point &lt;script type=&quot;math/tex&quot;&gt;x \cdot T&lt;/script&gt;. Let’s call it a &lt;em&gt;signature&lt;/em&gt; and denote it &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;. The user will not be able to uncover &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; because of DLP.&lt;/li&gt;
+  &lt;li&gt;The server will send the signature to the user, which later on will be able to use this signature to prove they received it from the server. Since only the server knows &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;, only the server could create &lt;script type=&quot;math/tex&quot;&gt;Z = x \cdot T&lt;/script&gt;, and so the server will know they have created these signatures.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This has the problem of tracking, since the server will be able to store all this data and correlate it to the user when the &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;s is used by the user.&lt;/p&gt;
+
+&lt;p&gt;The user, instead of sending &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; directly can use a &lt;em&gt;blinding factor&lt;/em&gt; &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt; to create &lt;script type=&quot;math/tex&quot;&gt;M = r \cdot T = r \cdot t \cdot G&lt;/script&gt;. We call this a &lt;em&gt;blinded token&lt;/em&gt;. Now, when receiving the signature &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt; over each &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;, the user will &lt;em&gt;unblind&lt;/em&gt; the signature by multiplying by the inverse of &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt;: &lt;script type=&quot;math/tex&quot;&gt;r^{-1} \cdot Z = r^{-1} \cdot x \cdot M = r^{-1} \cdot x \cdot r \cdot T = r^{-1} \cdot r \cdot x \cdot T = x \cdot T&lt;/script&gt;. Let’s denote this result &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;Although the user could cacluate &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt;, they could never generate it by themselves - since they don’t know &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;. Presenting the server &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt; allows the server to verify they indeed the ones who generated this signature, and the server will not know which &lt;em&gt;blinded token&lt;/em&gt; this signature relates to since they never knew the &lt;em&gt;blinding factor&lt;/em&gt; &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;The protocol now looks like this:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The user, requesting passes, will create a random token &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and a blinding factor &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt; and send the server the point &lt;script type=&quot;math/tex&quot;&gt;r \cdot t\cdot G&lt;/script&gt;, denoting it &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;.&lt;/li&gt;
+  &lt;li&gt;The server will create the point &lt;script type=&quot;math/tex&quot;&gt;x \cdot M&lt;/script&gt;. The server generates a signature &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;.&lt;/li&gt;
+  &lt;li&gt;The server will send the signature to the user, and the user unblinds the signature, calculating and storing &lt;script type=&quot;math/tex&quot;&gt;N=r^{-1} \cdot M&lt;/script&gt;.&lt;/li&gt;
+  &lt;li&gt;The user later on presents &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt; to the server when they would like to prove their humanity.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It sounds very good! Unfortunately, this doesn’t solve the problem of tracking, which might not be immediately obvious.&lt;/p&gt;
+
+&lt;p&gt;Assuming the server uses the same secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for all the users requesting passes, this works well. What if the server uses a different &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for every user? We’re right back to square one - the server, when verifying the signature, will be able to iterate over all the different &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;s they generated and thus identify the user.&lt;/p&gt;
+
+&lt;p&gt;This is why it’s important for the server to show it indeed uses the same secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for all the users. This is done by using a &lt;em&gt;Discrete Logarithm Equality Proof&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;discrete-logarithm-equality-proof&quot;&gt;Discrete Logarithm Equality Proof&lt;/h3&gt;
+
+&lt;p&gt;The server already publishes one point publicly - &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt;. The server could publish publicly an additional point &lt;script type=&quot;math/tex&quot;&gt;Y=x \cdot G&lt;/script&gt;. This is essentially a &lt;em&gt;commitment&lt;/em&gt; to the secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;The construction of how &lt;em&gt;DLEQ&lt;/em&gt; works requires a bit more math, and I prefer not getting into it in this post. That said, I would like to give a few points to those interested:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;It is similar to the Schnorr identification scheme, proving that the server knows the secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; - essentially proving knowledge of “&lt;script type=&quot;math/tex&quot;&gt;Y/G&lt;/script&gt;”.&lt;/li&gt;
+  &lt;li&gt;It uses the non-interactive variant of the scheme using the Fiat-Shamir heuristic, which also has an &lt;a href=&quot;https://tools.ietf.org/html/rfc8235&quot; target=&quot;_blank&quot;&gt;IETF RFC&lt;/a&gt;, converting it from an &lt;em&gt;honest-verifier zero-knowledge&lt;/em&gt; scheme to a &lt;em&gt;non-interactive zero knowledge argument&lt;/em&gt;.&lt;/li&gt;
+  &lt;li&gt;Instead of only proving knowledge of &lt;script type=&quot;math/tex&quot;&gt;Y/G&lt;/script&gt;, it also shows that the &lt;em&gt;same&lt;/em&gt; proof applies to &lt;script type=&quot;math/tex&quot;&gt;Z/M&lt;/script&gt;. This means that the publicly committed secret key, as shown in &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;, is the &lt;em&gt;same&lt;/em&gt; one used to create &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt; for &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;, proving that the server used the same secret key to generate the signature.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;A nice description of &lt;em&gt;DLEQ&lt;/em&gt; and some of these details are described in &lt;a href=&quot;https://blog.cryptographyengineering.com/2017/01/21/zero-knowledge-proofs-an-illustrated-primer-part-2/&quot; target=&quot;_blank&quot;&gt;this post by Matthew Green&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you would like more details on the math inolved, feel free to &lt;a href=&quot;https://kobigurk.com/contact.html&quot; target=&quot;_blank&quot;&gt;reach out&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;finalizing-the-protocol&quot;&gt;Finalizing the protocol&lt;/h3&gt;
+
+&lt;p&gt;By requiring &lt;em&gt;DLEQ&lt;/em&gt;, the server now can’t cheat and use different secret keys to track users. To make this protocol usable in practice, some other aspects should be considered:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Instead of sending a single token, the user could send multiple tokens to be signed at once.&lt;/li&gt;
+  &lt;li&gt;The server should limit the amount of tokens the user can request for each CAPTCHA solution, to prevent abuse by a user dispensing these tokens to other users, essentially making the protection useless.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
+
+&lt;p&gt;The original open-source implementation of Privacy Pass by Cloudflare and the researchers is &lt;a href=&quot;https://github.com/privacypass&quot; target=&quot;_blank&quot;&gt;available here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/kobigurk/privacypass-rs&quot; target=&quot;_blank&quot;&gt;My implementation of Privacy Pass in Rust is available here&lt;/a&gt;. Some details about it:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It is fully-compatible with the &lt;a href=&quot;https://github.com/privacypass&quot; target=&quot;_blank&quot;&gt;reference implementation&lt;/a&gt;, both as a server and as a client.&lt;/li&gt;
+  &lt;li&gt;It uses &lt;a href=&quot;https://github.com/milagro-crypto/amcl&quot; target=&quot;_blank&quot;&gt;amcl&lt;/a&gt; for elliptic-curve cryptography.&lt;/li&gt;
+  &lt;li&gt;It uses &lt;a href=&quot;https://github.com/rust-rocksdb/rust-rocksdb&quot; target=&quot;_blank&quot;&gt;RocksDB&lt;/a&gt; for storage.&lt;/li&gt;
+  &lt;li&gt;It is probably compilable to WebAssembly or other architectures with minor modifications.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Additionally, it is easy to modify it to support any kind of challenge-solution use-case: login to systems, voting and many more.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Privacy Pass allows adding privacy to a system where initially it seems impossible, by the use of cryptography. It’s awesome to see that some companies, which have all the means to disregard privacy at the cost of convenience, still go through the R&amp;amp;D and risk required to re-introduce privacy to their systems.&lt;/p&gt;
+
+&lt;p&gt;If you found this interesting and have more questions or suggestions, feel free to &lt;a href=&quot;https://kobigurk.com/contact.html&quot; target=&quot;_blank&quot;&gt;reach out&lt;/a&gt;, I’d love to hear from you!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a fully-compatible implementation of Privacy Pass in Rust.</summary></entry><entry><title type="html">Creating fake zkSNARK proofs</title><link href="/2018/07/16/creating-fake-zksnarks-proofs.html" rel="alternate" type="text/html" title="Creating fake zkSNARK proofs" /><published>2018-07-16T00:00:00+03:00</published><updated>2018-07-16T00:00:00+03:00</updated><id>/2018/07/16/creating-fake-zksnarks-proofs</id><content type="html" xml:base="/2018/07/16/creating-fake-zksnarks-proofs.html">&lt;h1 id=&quot;creating-fake-zksnark-proofs&quot;&gt;Creating fake zkSNARK proofs&lt;/h1&gt;
 
 &lt;p&gt;As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs.
 Specifically, succinct and non-interactive ones.&lt;/p&gt;
