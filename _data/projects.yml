@@ -1,3 +1,6 @@
+- name: ZKP in WebAssembly
+  link: https://github.com/kobigurk/wasm_proof
+  description: Exploring working with zkSNARKs in WebAssembly, online version available on https://zkwasm.kobi.one.
 - name: privacypass-rs
   link: https://github.com/kobigurk/privacypass-rs
   description: A fully-compatible implementation of Privacy Pass in Rust, as described in the blog post - https://kobigurk/2019/01/05/exploring-privacypass.html.
