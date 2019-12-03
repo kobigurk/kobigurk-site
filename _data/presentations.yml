@@ -1,5 +1,5 @@
 - name: "ZKPodcast Episode 93: Light clients & ZKPs with Celo"
-  description: In this episode, we chat with the Marek Olszewski & Kobi Gurkan from Celo about their proof-of-stake protocol, their work on making a mobile-ready light client, how zero knowledge proofs can help to make a light client "lighter", why this would be desirable and what potential such a construction could unlock.
+  description: In this episode, we chat with Marek Olszewski & Kobi Gurkan from Celo about their proof-of-stake protocol, their work on making a mobile-ready light client, how zero knowledge proofs can help to make a light client "lighter", why this would be desirable and what potential such a construction could unlock.
   link: https://www.zeroknowledge.fm/93
 - name: "Prove-it, Blockchain-it: ZKP in Action"
   description: Zero-Knowledge Proofs, zkSNARKs and Sudoku.
