@@ -1,0 +1,14 @@
+{
+	"version": 3,
+	"file": "styles.css",
+	"sources": [
+		"styles.scss",
+		"_sass/main.scss"
+	],
+	"sourcesContent": [
+		"@import \"main\";\n",
+		".centeredimg {\n  margin: 1em auto;\n}\n\nbody {\n  font-size: 1.2em;\n}\n\na,\na:link,\na:visited,\na:hover {\n  color: #777;\n}\n"
+	],
+	"names": [],
+	"mappings": "ACAA,AAAA,YAAY,CAAC,EACX,MAAM,EAAE,QAAQ,GACjB;;AAED,AAAA,IAAI,CAAC,EACH,SAAS,EAAE,KAAK,GACjB;;AAED,AAAA,CAAC,EACD,CAAC,AAAA,KAAK,EACN,CAAC,AAAA,QAAQ,EACT,CAAC,AAAA,MAAM,CAAC,EACN,KAAK,EAAE,IAAI,GACZ"
+}

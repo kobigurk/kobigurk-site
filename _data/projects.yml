@@ -1,3 +1,9 @@
+- name: phase2-bn254
+  link: https://github.com/kobigurk/phase2-bn254
+  description: Phase 2 trusted setup on BN254, based on Zcash phase 2 and Matter Labs powersoftau repostories.
+- name: Semaphore
+  link: https://github.com/kobigurk/semaphore/
+  description: Zero-knowledge signaling layer on Ethereum.
 - name: ZKP in WebAssembly
   link: https://github.com/kobigurk/wasm_proof
   description: Exploring working with zkSNARKs in WebAssembly, online version available on https://zkwasm.kobi.one.
