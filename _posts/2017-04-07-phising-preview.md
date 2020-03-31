@@ -35,7 +35,7 @@ That's it. The hacker can now insert whatever code he wants, even a redirect to 
 Another component which may be useful in order to mask the fact it's a malicious URL would be a URL shortener such as [bit.ly](http://bit.ly).
 
 #Meh, that's a bit of work
-Well, then you can just use [my tool](http://roll.kobigurk.com/generator.html) to generate an auto-redirecting malicious URL shortened by bit.ly.
+Well, then you can just use [my tool](http://roll.kobi.one/generator.html) to generate an auto-redirecting malicious URL shortened by bit.ly.
 
 ![TPaaS](/content/images/2017/04/Untitled.png)
 

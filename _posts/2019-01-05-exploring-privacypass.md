@@ -56,7 +56,7 @@ The answer lies in *tracking*. When Cloudflare would send these passes to the us
 
 If Cloudflare would have liked, they could track the user across multiple sites. To show a concrete example:
 
-* The user, being at home, would have gone to kobigurk.com, see a challenge and solve it, let's denote the solution $$S$$. They would send the solution to Cloudflare, containing the solution $$S$$ and natually their home IP.
+* The user, being at home, would have gone to kobi.one, see a challenge and solve it, let's denote the solution $$S$$. They would send the solution to Cloudflare, containing the solution $$S$$ and natually their home IP.
 * Cloudflare would approve the solution, and send passes $$P_1, ... P_N$$. Additionally, they would store in their database the connection between $$S$$, each $$P_i$$ and the user's IP.
 * Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass $$P_i$$ with the user.
 
@@ -114,7 +114,7 @@ The construction of how *DLEQ* works requires a bit more math, and I prefer not 
 
 A nice description of *DLEQ* and some of these details are described in [this post by Matthew Green](https://blog.cryptographyengineering.com/2017/01/21/zero-knowledge-proofs-an-illustrated-primer-part-2/){:target="_blank"}.
 
-If you would like more details on the math inolved, feel free to [reach out](https://kobigurk.com/contact.html){:target="_blank"}.
+If you would like more details on the math inolved, feel free to [reach out](https://kobi.one/contact.html){:target="_blank"}.
 
 ### Finalizing the protocol
 
@@ -140,4 +140,4 @@ Additionally, it is easy to modify it to support any kind of challenge-solution 
 
 Privacy Pass allows adding privacy to a system where initially it seems impossible, by the use of cryptography. It's awesome to see that some companies, which have all the means to disregard privacy at the cost of convenience, still go through the R&D and risk required to re-introduce privacy to their systems.
 
-If you found this interesting and have more questions or suggestions, feel free to [reach out](https://kobigurk.com/contact.html){:target="_blank"}, I'd love to hear from you!
+If you found this interesting and have more questions or suggestions, feel free to [reach out](https://kobi.one/contact.html){:target="_blank"}, I'd love to hear from you!

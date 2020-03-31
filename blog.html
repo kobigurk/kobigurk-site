@@ -4,7 +4,7 @@ title: Blog
 <ul>
   {% for post in site.posts %}
     <li>
-      <h2 style="margin-bottom: 0;"><a href="{% if jekyll.environment == "production" %}https://kobigurk.com{{ post.url }}{% else %}{{ post.url }}{% endif %}">{{ post.title }}</a></h2>
+      <h2 style="margin-bottom: 0;"><a href="{% if jekyll.environment == "production" %}https://kobi.one{{ post.url }}{% else %}{{ post.url }}{% endif %}">{{ post.title }}</a></h2>
       <p style="margin-top: 0;">{{ post.date | date_to_string}}</p>
       <p>{{ post.excerpt }}</p>
     </li>

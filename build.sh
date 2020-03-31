@@ -1,2 +1,2 @@
 JEKYLL_ENV=production jekyll build -d docs
-echo kobigurk.com >> docs/CNAME
+echo kobi.one >> docs/CNAME
