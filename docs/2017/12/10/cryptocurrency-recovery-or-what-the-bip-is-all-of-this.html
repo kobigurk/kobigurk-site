@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Cryptocurrency recovery (or “What the BIP is all of this?”)</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Cryptocurrency recovery (or “What the BIP is all of this?”)" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover." />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2017-12-10T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Cryptocurrency recovery (or “What the BIP is all of this?”)" />
 <script type="application/ld+json">
-{"description":"Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover.","headline":"Cryptocurrency recovery (or “What the BIP is all of this?”)","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html"},"@type":"BlogPosting","url":"/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2017-12-10T00:00:00+02:00","datePublished":"2017-12-10T00:00:00+02:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html","headline":"Cryptocurrency recovery (or “What the BIP is all of this?”)","dateModified":"2017-12-10T00:00:00+02:00","datePublished":"2017-12-10T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html"},"author":{"@type":"Person","name":"Kobi"},"description":"Having Bitcoins is nice and having them being stored securely is even nicer. Though, as often is the case, the additional security often invites complexity to frequent use of your money. There are great software and hardware solutions that make your money safer than ever. But it’s not always easy to recover.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -155,7 +157,7 @@ translates to
 <p><a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">BIP44</a> uses BIP32 and describes a standard way to generate private keys such that you can use the same master private key for different cryptocurrencies or use-cases without risk.</p>
 
 <p>That is, it standardizes the path that is used by BIP32:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>m / purpose' / coin_type' / account' / change / address_index
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>m / purpose' / coin_type' / account' / change / address_index
 </code></pre></div></div>
 
 <ul>

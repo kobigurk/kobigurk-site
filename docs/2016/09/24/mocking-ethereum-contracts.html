@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Mocking Ethereum contracts</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Mocking Ethereum contracts" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished." />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2016-09-24T00:00:00+03:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Mocking Ethereum contracts" />
 <script type="application/ld+json">
-{"description":"Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.","headline":"Mocking Ethereum contracts","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/09/24/mocking-ethereum-contracts.html"},"@type":"BlogPosting","url":"/2016/09/24/mocking-ethereum-contracts.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2016-09-24T00:00:00+03:00","datePublished":"2016-09-24T00:00:00+03:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2016/09/24/mocking-ethereum-contracts.html","headline":"Mocking Ethereum contracts","dateModified":"2016-09-24T00:00:00+03:00","datePublished":"2016-09-24T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/09/24/mocking-ethereum-contracts.html"},"author":{"@type":"Person","name":"Kobi"},"description":"Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -81,7 +83,7 @@
 <p>Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</p>
 
 <p>For node.js, for example, we have Mocha as a testing framework a Sinon.JS as a mocking framework. This is a code example that shows the usage of these two together:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
 var sinon = require('sinon');
                                                                                                                                                                                                                                                                                                                                                                            
 it("returns the return value from the original function", function () {
@@ -98,10 +100,10 @@ it("returns the return value from the original function", function () {
 });
 </code></pre></div></div>
 
-<p>In this example, you take a function, <code class="highlighter-rouge">myAPI.method</code>, that usually returns <code class="highlighter-rouge">5</code>, and make it return <code class="highlighter-rouge">42</code>. This is useful when you want to see how your code behaves when, for example, <code class="highlighter-rouge">result</code> is larger than <code class="highlighter-rouge">30</code>.</p>
+<p>In this example, you take a function, <code class="language-plaintext highlighter-rouge">myAPI.method</code>, that usually returns <code class="language-plaintext highlighter-rouge">5</code>, and make it return <code class="language-plaintext highlighter-rouge">42</code>. This is useful when you want to see how your code behaves when, for example, <code class="language-plaintext highlighter-rouge">result</code> is larger than <code class="language-plaintext highlighter-rouge">30</code>.</p>
 
 <p>A more complex example would be:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
 var sinon = require('sinon');
                                                                                                                                                                                                                                                                                                                                                                            
 function once(fn) {
@@ -130,7 +132,7 @@ it("returns the return value from the original function", function () {
 });
 </code></pre></div></div>
 
-<p>In this example, we don’t call <code class="highlighter-rouge">myAPI.method</code> directly. Instead, <code class="highlighter-rouge">once</code> calls it. So although we didn’t call it directly, the method was still mocked and returned <code class="highlighter-rouge">42</code> instead of <code class="highlighter-rouge">5</code>.</p>
+<p>In this example, we don’t call <code class="language-plaintext highlighter-rouge">myAPI.method</code> directly. Instead, <code class="language-plaintext highlighter-rouge">once</code> calls it. So although we didn’t call it directly, the method was still mocked and returned <code class="language-plaintext highlighter-rouge">42</code> instead of <code class="language-plaintext highlighter-rouge">5</code>.</p>
 
 <h1 id="testing-in-ethereum">Testing in Ethereum</h1>
 <p><a href="https://live.ether.camp/" target="_blank">Ether.camp</a> has been working on a pretty cool testing framework, utilizing the sandbox they developed for the excellent IDE, <strong>Ethereum Studio</strong>. You can see examples of it <a href="https://github.com/ether-camp/ethereum-testing-reference" target="_blank">here</a>.</p>
@@ -156,7 +158,7 @@ it("returns the return value from the original function", function () {
 </code></pre></div></div>
 
 <p>A simple test case would be:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
 
 var Workbench = require('ethereum-sandbox-workbench');
 var workbench = new Workbench({
@@ -192,13 +194,13 @@ workbench.startTesting('Math', function(contracts) {
   <li>Checks that addition actually works correctly in Ethereum. If you run this test case with Mocha, you’ll be sure to see it does!</li>
 </ol>
 
-<p>You probably noticed that after calling <code class="highlighter-rouge">startTesting</code> we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to <a href="https://github.com/ConsenSys/ether-pudding" target="_blank">Ether Pudding</a>.</p>
+<p>You probably noticed that after calling <code class="language-plaintext highlighter-rouge">startTesting</code> we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to <a href="https://github.com/ConsenSys/ether-pudding" target="_blank">Ether Pudding</a>.</p>
 
 <h1 id="mocking-in-ethereum">Mocking in Ethereum</h1>
 <p>But what about mocking? When you’re testing Ethereum contracts, it’s more than a matter of modifying javascript functions. Ethereum contracts are pieces of code living on the Ethereum blockchain, accessible by sending transactions or calling their address.</p>
 
 <p>For example, let’s look at the following contract:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
 
 contract GoldPriceChecker {
   function GoldPriceChecker(address goldPriceContractAddress) {
@@ -219,7 +221,7 @@ contract GoldPriceChecker {
 </code></pre></div></div>
 
 <p>This contract checks the price of gold and returns a “happiness meter” depending on the price. It depends on a <strong>GoldPrice</strong> contract, of which’s address is provided in our contract’s constructor. The interface of the <strong>GoldPrice</strong> contract is:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract GoldPrice {
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract GoldPrice {
   function GoldPrice(); 
   function price() constant returns(uint256); 
   function notifyCallback(); 
@@ -242,27 +244,27 @@ contract GoldPriceChecker {
 <p>In order to understand how to create such a contract, we need to understand how transactions and calls in Ethereum work.</p>
 
 <h1 id="ethereum-contract-abi">Ethereum Contract ABI</h1>
-<p>Let’s say we want to call the Solidity function <code class="highlighter-rouge">getPriceWithParameter</code> with the parameter <code class="highlighter-rouge">5</code>. According to the <a href="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI" target="_blank">Ethereum Contract ABI</a>, we first calculate the Method ID: first 4 bytes of <code class="highlighter-rouge">sha3("getPriceWithParameter(uint256)")</code>. In our case, it would be <code class="highlighter-rouge">0x60360e31</code>. Then, we encode the parameters. In our case, it would be <code class="highlighter-rouge">0x0000000000000000000000000000000000000000000000000000000000000005</code>.  Then, we concatenate them.</p>
+<p>Let’s say we want to call the Solidity function <code class="language-plaintext highlighter-rouge">getPriceWithParameter</code> with the parameter <code class="language-plaintext highlighter-rouge">5</code>. According to the <a href="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI" target="_blank">Ethereum Contract ABI</a>, we first calculate the Method ID: first 4 bytes of <code class="language-plaintext highlighter-rouge">sha3("getPriceWithParameter(uint256)")</code>. In our case, it would be <code class="language-plaintext highlighter-rouge">0x60360e31</code>. Then, we encode the parameters. In our case, it would be <code class="language-plaintext highlighter-rouge">0x0000000000000000000000000000000000000000000000000000000000000005</code>.  Then, we concatenate them.</p>
 
-<p>Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of <code class="highlighter-rouge">GoldPrice</code> called <code class="highlighter-rouge">goldPrice</code> which was deployed at address <code class="highlighter-rouge">0xabcdefababcdefababcdefababcdefababcdefab</code>, then calling the following:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>goldPrice.getPriceWithParaemeter(5, {
+<p>Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of <code class="language-plaintext highlighter-rouge">GoldPrice</code> called <code class="language-plaintext highlighter-rouge">goldPrice</code> which was deployed at address <code class="language-plaintext highlighter-rouge">0xabcdefababcdefababcdefababcdefababcdefab</code>, then calling the following:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>goldPrice.getPriceWithParaemeter(5, {
   from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
 });
 </code></pre></div></div>
 
 <p>is equivalent to:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>web3.eth.call({
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>web3.eth.call({
   from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826',
   to: '0xabcdefababcdefababcdefababcdefababcdefab',
   data: '0x60360e310000000000000000000000000000000000000000000000000000000000000005'
 });
 </code></pre></div></div>
 
-<p>In the Solidity code of the contract iself, it’s possible to access the <code class="highlighter-rouge">data</code> using the globally available <code class="highlighter-rouge">msg.data</code>, which is of type <code class="highlighter-rouge">bytes</code>, and the method ID using <code class="highlighter-rouge">msg.sig</code>, which is of type <code class="highlighter-rouge">bytes4</code>.</p>
+<p>In the Solidity code of the contract iself, it’s possible to access the <code class="language-plaintext highlighter-rouge">data</code> using the globally available <code class="language-plaintext highlighter-rouge">msg.data</code>, which is of type <code class="language-plaintext highlighter-rouge">bytes</code>, and the method ID using <code class="language-plaintext highlighter-rouge">msg.sig</code>, which is of type <code class="language-plaintext highlighter-rouge">bytes4</code>.</p>
 
 <h1 id="proxy-contract">Proxy contract</h1>
 <p>Without further ado, I present you the Proxy contract:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract Proxy {
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>contract Proxy {
 
   bool _traceFunctionCalls = false;
   event Trace(address caller, bytes data, uint value);
@@ -321,40 +323,40 @@ contract GoldPriceChecker {
 <p>As can be seen in the contract code, it has three functions:</p>
 
 <ol>
-  <li><code class="highlighter-rouge">setMock</code> that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (<code class="highlighter-rouge">msg.sig</code>).</li>
-  <li><code class="highlighter-rouge">setMockWithArgs</code> that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (<code class="highlighter-rouge">msg.data</code>).</li>
-  <li>Fallback function (<code class="highlighter-rouge">function () {}</code>) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.</li>
+  <li><code class="language-plaintext highlighter-rouge">setMock</code> that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (<code class="language-plaintext highlighter-rouge">msg.sig</code>).</li>
+  <li><code class="language-plaintext highlighter-rouge">setMockWithArgs</code> that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (<code class="language-plaintext highlighter-rouge">msg.data</code>).</li>
+  <li>Fallback function (<code class="language-plaintext highlighter-rouge">function () {}</code>) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.</li>
 </ol>
 
-<p>The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. <code class="highlighter-rouge">GoldPrice</code> at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the <code class="highlighter-rouge">msg.data</code> of the resulting call will be an attempt to invoke the function of the <code class="highlighter-rouge">GoldPrice</code> contract on the proxy contract itself.</p>
+<p>The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. <code class="language-plaintext highlighter-rouge">GoldPrice</code> at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the <code class="language-plaintext highlighter-rouge">msg.data</code> of the resulting call will be an attempt to invoke the function of the <code class="language-plaintext highlighter-rouge">GoldPrice</code> contract on the proxy contract itself.</p>
 
-<p>Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked <code class="highlighter-rouge">setMock</code> with the following arguments: <code class="highlighter-rouge">setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)</code>. In other words, we’ve configured the proxy contract to return <code class="highlighter-rouge">5</code> when called with a <code class="highlighter-rouge">msg.sig</code> of <code class="highlighter-rouge">0x6036e31</code>. By pointing the Ether Pudding interface of <code class="highlighter-rouge">GoldPrice</code> at the deployed proxy contract, the resulting object being <code class="highlighter-rouge">goldPrice</code>, this is equivalent to calling <code class="highlighter-rouge">goldPrice.getPriceWithParameter</code> with any parameter.</p>
+<p>Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked <code class="language-plaintext highlighter-rouge">setMock</code> with the following arguments: <code class="language-plaintext highlighter-rouge">setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)</code>. In other words, we’ve configured the proxy contract to return <code class="language-plaintext highlighter-rouge">5</code> when called with a <code class="language-plaintext highlighter-rouge">msg.sig</code> of <code class="language-plaintext highlighter-rouge">0x6036e31</code>. By pointing the Ether Pudding interface of <code class="language-plaintext highlighter-rouge">GoldPrice</code> at the deployed proxy contract, the resulting object being <code class="language-plaintext highlighter-rouge">goldPrice</code>, this is equivalent to calling <code class="language-plaintext highlighter-rouge">goldPrice.getPriceWithParameter</code> with any parameter.</p>
 
 <p>Before I’ll show you how to use it in the mocking framework, I want to point you to the following part in the proxy contract:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bytes memory data = operation.data;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bytes memory data = operation.data;
 assembly {
   return(add(data, 32), mload(data))
 }
 </code></pre></div></div>
 
-<p>There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., <code class="highlighter-rouge">uint256</code>. By using inline assembly and the <code class="highlighter-rouge">return</code> opcode, we are able force the contract to return with the bytes saved when the mock was configured.</p>
+<p>There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., <code class="language-plaintext highlighter-rouge">uint256</code>. By using inline assembly and the <code class="language-plaintext highlighter-rouge">return</code> opcode, we are able force the contract to return with the bytes saved when the mock was configured.</p>
 
-<p>To understand how this works, we should look at how a <code class="highlighter-rouge">bytes</code> variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.</p>
+<p>To understand how this works, we should look at how a <code class="language-plaintext highlighter-rouge">bytes</code> variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.</p>
 
 <p>The quoted code segment does the following:</p>
 
 <ol>
-  <li>Copies <code class="highlighter-rouge">operation.data</code> from storage to memory, by using the <code class="highlighter-rouge">memory</code> keyword. This is needed, because the <code class="highlighter-rouge">return</code> opcode returns from memory.</li>
-  <li><code class="highlighter-rouge">mload</code> loads the first 32 bytes of the <code class="highlighter-rouge">data</code> variables. This would be the length of the array.</li>
-  <li><code class="highlighter-rouge">add(data, 32)</code> is the address of the actual data in the <code class="highlighter-rouge">bytes</code> array.</li>
-  <li><code class="highlighter-rouge">return(p,s)</code> itself terminates the contract execution and returns <code class="highlighter-rouge">s</code> bytes of data starting  in memory address <code class="highlighter-rouge">p</code>.</li>
+  <li>Copies <code class="language-plaintext highlighter-rouge">operation.data</code> from storage to memory, by using the <code class="language-plaintext highlighter-rouge">memory</code> keyword. This is needed, because the <code class="language-plaintext highlighter-rouge">return</code> opcode returns from memory.</li>
+  <li><code class="language-plaintext highlighter-rouge">mload</code> loads the first 32 bytes of the <code class="language-plaintext highlighter-rouge">data</code> variables. This would be the length of the array.</li>
+  <li><code class="language-plaintext highlighter-rouge">add(data, 32)</code> is the address of the actual data in the <code class="language-plaintext highlighter-rouge">bytes</code> array.</li>
+  <li><code class="language-plaintext highlighter-rouge">return(p,s)</code> itself terminates the contract execution and returns <code class="language-plaintext highlighter-rouge">s</code> bytes of data starting  in memory address <code class="language-plaintext highlighter-rouge">p</code>.</li>
 </ol>
 
 <p>To learn more about in-line assembly, check out the <a href="https://solidity.readthedocs.io/en/latest/control-structures.html#inline-assembly" target="_blank">Solidity documentation</a>.</p>
 
 <h1 id="mocking-framework">Mocking framework</h1>
 <p>To make life easy, we added the mocking framework to the <a href="https://github.com/ether-camp/ethereum-sandbox-workbench" target="_blank">ethereum-sandbox-workbench</a>. This is an example of working with it:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var assert = require('assert');
 var Workbench = require('ethereum-sandbox-workbench');
 
 var fromAddress = '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826';
@@ -421,12 +423,12 @@ workbench.startTesting(['GoldPrice', 'GoldPriceChecker'], function(contracts) {
 <p>Let’s recap what we see here:</p>
 
 <ol>
-  <li>To deploy a proxy contract but have the interface of the <code class="highlighter-rouge">GoldPrice</code> contract, we deploy using <code class="highlighter-rouge">newMock</code> instead of <code class="highlighter-rouge">new</code>.</li>
-  <li>To set-up a new mock for a call return value, we use <code class="highlighter-rouge">mockCallReturnValue</code> on the <code class="highlighter-rouge">price</code> function.</li>
-  <li>Then the <code class="highlighter-rouge">goldPriceChecker</code> which calls the <code class="highlighter-rouge">GoldPrice</code> contract in its code sees the mocked value.</li>
+  <li>To deploy a proxy contract but have the interface of the <code class="language-plaintext highlighter-rouge">GoldPrice</code> contract, we deploy using <code class="language-plaintext highlighter-rouge">newMock</code> instead of <code class="language-plaintext highlighter-rouge">new</code>.</li>
+  <li>To set-up a new mock for a call return value, we use <code class="language-plaintext highlighter-rouge">mockCallReturnValue</code> on the <code class="language-plaintext highlighter-rouge">price</code> function.</li>
+  <li>Then the <code class="language-plaintext highlighter-rouge">goldPriceChecker</code> which calls the <code class="language-plaintext highlighter-rouge">GoldPrice</code> contract in its code sees the mocked value.</li>
 </ol>
 
-<p>Similarly, you can mock a transaction response using <code class="highlighter-rouge">mockTransactionForward</code> and trace function calls (making sure the functions were called in a specific transaction) using <code class="highlighter-rouge">wasCalled</code> on the mocked function. To see examples of those, check out the <a href="https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js" target="_blank">test case</a>!</p>
+<p>Similarly, you can mock a transaction response using <code class="language-plaintext highlighter-rouge">mockTransactionForward</code> and trace function calls (making sure the functions were called in a specific transaction) using <code class="language-plaintext highlighter-rouge">wasCalled</code> on the mocked function. To see examples of those, check out the <a href="https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js" target="_blank">test case</a>!</p>
 
 
 

@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Additive Homomorphic Encryption on Ethereum</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Additive Homomorphic Encryption on Ethereum" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down." />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2016-04-10T00:00:00+03:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Additive Homomorphic Encryption on Ethereum" />
 <script type="application/ld+json">
-{"description":"A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.","headline":"Additive Homomorphic Encryption on Ethereum","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/04/10/additive-homomorphic-encryption-on-ethereum.html"},"@type":"BlogPosting","url":"/2016/04/10/additive-homomorphic-encryption-on-ethereum.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2016-04-10T00:00:00+03:00","datePublished":"2016-04-10T00:00:00+03:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2016/04/10/additive-homomorphic-encryption-on-ethereum.html","headline":"Additive Homomorphic Encryption on Ethereum","dateModified":"2016-04-10T00:00:00+03:00","datePublished":"2016-04-10T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/04/10/additive-homomorphic-encryption-on-ethereum.html"},"author":{"@type":"Person","name":"Kobi"},"description":"A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -92,19 +94,19 @@ One approach which I wanted to explore is homomorphic encryption. From <a href="
 
 <p>For example, assuming \(ENC\) and \(DEC\) are our encryption and decryption functions respectively, we can have:</p>
 
-<script type="math/tex; mode=display">x\_1=3, x\_2=4 \\\\ 
+\[x\_1=3, x\_2=4 \\\\ 
 c\_1 = ENC(x\_1), c\_2 = ENC(x\_2) \\\\
 c\_3 = F(c\_1, c\_2) \\\\
  \text{ such that} \\\\
-x\_3 = DEC(c\_3) = x\_1 + x\_2</script>
+x\_3 = DEC(c\_3) = x\_1 + x\_2\]
 
 <p>By performing an operation on the encrypted \(x_1, x_2\) we got their sum.</p>
 
 <p>The “holy grail” of homomorphic encryption is <a href="https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption" target="_blank">Fully Homomorphic Encryption</a>, with which you can get results of arbitrary computations on encrypted data, not just their sum or product. One cryptosystem which provides you with <em>additive</em> homomorphic encryption is the <a href="https://en.wikipedia.org/wiki/Paillier_cryptosystem" target="_blank">Paillier Cryptosystem</a>. Additive here means that you can get the sum of two encrypted numbers.</p>
 
 <p>The Paillier Cryptosystem is an asymmetric encryption scheme, meaning that you encrypt with your public key and decrypt with your private key. Leaving the key generation process aside, the parameters we need to use the cryptosystem are:
-<script type="math/tex">\\text{public key} = (n, g) \\\\
-\\text{private key} = (\lambda, \mu)</script>
+\(\\text{public key} = (n, g) \\\\
+\\text{private key} = (\lambda, \mu)\)
 The specific meaning of the parameters is not needed for what I want to show, and they’re all the result of the key generation process.</p>
 
 <p><strong>Encryption process</strong>:</p>
@@ -123,7 +125,7 @@ The specific meaning of the parameters is not needed for what I want to show, an
 </ol>
 
 <p>What we’re interested in now is the homomorphic addition property:
-<script type="math/tex">DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2</script></p>
+\(DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2\)</p>
 
 <p>#Homomorphic Encryption in Practice
 So what does that property give us? Let’s look at a specific use case. Let’s assume we have an Ethereum smart contract that manages the expenses of employees:</p>

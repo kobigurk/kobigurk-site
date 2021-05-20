@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Phishing in the age of preview</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Phishing in the age of preview" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser." />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2017-04-07T00:00:00+03:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Phishing in the age of preview" />
 <script type="application/ld+json">
-{"description":"Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.","headline":"Phishing in the age of preview","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/07/phising-preview.html"},"@type":"BlogPosting","url":"/2017/04/07/phising-preview.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2017-04-07T00:00:00+03:00","datePublished":"2017-04-07T00:00:00+03:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2017/04/07/phising-preview.html","headline":"Phishing in the age of preview","dateModified":"2017-04-07T00:00:00+03:00","datePublished":"2017-04-07T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/07/phising-preview.html"},"author":{"@type":"Person","name":"Kobi"},"description":"Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -95,16 +97,16 @@
 
 <p>Many of the messaging platforms support it - an incomplete list includes Facebook, WhatsApp and Telegram.</p>
 
-<p>In order to have a preview for your web-site, you just need to add this prefix to the <code class="highlighter-rouge">html</code> tag and these properties to your <code class="highlighter-rouge">head</code> section:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;html</span> <span class="na">prefix=</span><span class="s">"og: http://ogp.me/ns#"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;head&gt;</span> 
-        <span class="nt">&lt;meta</span> <span class="na">property=</span><span class="s">"og:title"</span> <span class="na">content=</span><span class="s">""</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">property=</span><span class="s">"og:site_name"</span> <span class="na">content=</span><span class="s">""</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">property=</span><span class="s">"og:image"</span> <span class="na">content=</span><span class="s">""</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">property=</span><span class="s">"og:url"</span> <span class="na">content=</span><span class="s">""</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">property=</span><span class="s">"og:description"</span> <span class="na">content=</span><span class="s">""</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;/head&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
+<p>In order to have a preview for your web-site, you just need to add this prefix to the <code class="language-plaintext highlighter-rouge">html</code> tag and these properties to your <code class="language-plaintext highlighter-rouge">head</code> section:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;html prefix="og: http://ogp.me/ns#"&gt;
+    &lt;head&gt; 
+        &lt;meta property="og:title" content=""&gt;
+        &lt;meta property="og:site_name" content=""&gt;
+        &lt;meta property="og:image" content=""&gt;
+        &lt;meta property="og:url" content=""&gt;
+        &lt;meta property="og:description" content=""&gt;
+    &lt;/head&gt;
+&lt;/html&gt;
 </code></pre></div></div>
 <p>That’s it. The hacker can now insert whatever code he wants, even a redirect to another web-site.</p>
 
@@ -125,7 +127,7 @@ Good question. It’s always an interactive game - put a barrier, hackers get th
 
 <p>Facebook, for example, does a better job than the rest:</p>
 <ol>
-  <li>If a URL is given in the <code class="highlighter-rouge">og:url</code> tag, that one is eventually used to retrieve the others.</li>
+  <li>If a URL is given in the <code class="language-plaintext highlighter-rouge">og:url</code> tag, that one is eventually used to retrieve the others.</li>
   <li>If a URL is not given or invalid, then the actual URL is displayed under the post.</li>
 </ol>
 

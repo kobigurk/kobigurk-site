@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Creating fake zkSNARK proofs</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Creating fake zkSNARK proofs" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2018-07-16T00:00:00+03:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Creating fake zkSNARK proofs" />
 <script type="application/ld+json">
-{"description":"As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?","headline":"Creating fake zkSNARK proofs","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/07/16/creating-fake-zksnarks-proofs.html"},"@type":"BlogPosting","url":"/2018/07/16/creating-fake-zksnarks-proofs.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2018-07-16T00:00:00+03:00","datePublished":"2018-07-16T00:00:00+03:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2018/07/16/creating-fake-zksnarks-proofs.html","headline":"Creating fake zkSNARK proofs","dateModified":"2018-07-16T00:00:00+03:00","datePublished":"2018-07-16T00:00:00+03:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/07/16/creating-fake-zksnarks-proofs.html"},"author":{"@type":"Person","name":"Kobi"},"description":"As you may know, zkSNARKs are a way to create Zero-Knowledge Proofs. They do require a trusted setup. What happens when the setup is compromised?","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -171,7 +173,7 @@ yields A*B-C = 0.</li>
 </ol>
 
 <p>The important part happens now — the prover, while not knowing Tau, can
-calculate “in-the-exponent” H(z) evaluated at Tau — <script type="math/tex">H(\tau)</script>!</p>
+calculate “in-the-exponent” H(z) evaluated at Tau — \(H(\tau)\)!</p>
 
 <p>Why do we do that? Since by evaluating at the random point Tau, the prover shows
 with high probability that the equation H=(A*B-C)/Z holds for all z. From a
@@ -181,15 +183,15 @@ exact same value at that point.</p>
 
 <p>How can we technically do that? By the fact that part of the setup process
 generated elements containing all the relevant powers of Tau, hidden in the
-exponent, given as <script type="math/tex">pk_{H_i}</script>. If we have the coefficients of H, we can combine these
-and create <script type="math/tex">H(\tau)</script>.</p>
+exponent, given as \(pk_{H_i}\). If we have the coefficients of H, we can combine these
+and create \(H(\tau)\).</p>
 
 <p>More specifically:</p>
 
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><script type="math/tex">H(z) = \sum{h_i \cdot z^i }</script></th>
+      <th style="text-align: center">\(H(z) = \sum{h_i \cdot z^i }\)</th>
     </tr>
   </thead>
   <tbody>
@@ -202,7 +204,7 @@ and create <script type="math/tex">H(\tau)</script>.</p>
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><script type="math/tex">{pk}_{H_i} = \tau^i \cdot G_i</script></th>
+      <th style="text-align: center">\({pk}_{H_i} = \tau^i \cdot G_i\)</th>
     </tr>
   </thead>
   <tbody>
@@ -215,12 +217,12 @@ and create <script type="math/tex">H(\tau)</script>.</p>
 <table class="centeredimg">
   <thead>
     <tr>
-      <th style="text-align: center"><script type="math/tex">\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1</script></th>
+      <th style="text-align: center">\(\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1\)</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="text-align: center">Evaluating <script type="math/tex">H(\tau)</script> “in-the-exponent”</td>
+      <td style="text-align: center">Evaluating \(H(\tau)\) “in-the-exponent”</td>
     </tr>
   </tbody>
 </table>
@@ -237,7 +239,7 @@ was exposed during the setup process and is known to a malicious prover?</p>
 <p>Apparently, it’s very easy to forge a proof — since the equality check for
 H=(A*B-C)/Z is done is at the specific point Tau, we can use our knowledge of
 Tau to create a polynomial which satisfies exactly that! That is, create a
-constant polynomial H(z), which just returns <script type="math/tex">(A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)</script> all
+constant polynomial H(z), which just returns \((A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)\) all
 the time.</p>
 
 <p>The verifier’s check will pass, and none’s the wiser!</p>

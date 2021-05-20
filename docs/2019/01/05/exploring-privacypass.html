@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="/assets/css/side-menu.css">
 		<link rel="stylesheet" href="/assets/css/styles.css">
     <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
-    <!-- Begin Jekyll SEO tag v2.6.1 -->
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
 <title>Exploring Privacy Pass</title>
-<meta name="generator" content="Jekyll v4.0.0" />
+<meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="Exploring Privacy Pass" />
 <meta name="author" content="Kobi" />
 <meta property="og:locale" content="en_US" />
@@ -17,8 +17,10 @@
 <meta property="og:description" content="This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a fully-compatible implementation of Privacy Pass in Rust." />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-01-05T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Exploring Privacy Pass" />
 <script type="application/ld+json">
-{"description":"This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a fully-compatible implementation of Privacy Pass in Rust.","headline":"Exploring Privacy Pass","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/01/05/exploring-privacypass.html"},"@type":"BlogPosting","url":"/2019/01/05/exploring-privacypass.html","author":{"@type":"Person","name":"Kobi"},"dateModified":"2019-01-05T00:00:00+02:00","datePublished":"2019-01-05T00:00:00+02:00","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","url":"/2019/01/05/exploring-privacypass.html","headline":"Exploring Privacy Pass","dateModified":"2019-01-05T00:00:00+02:00","datePublished":"2019-01-05T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/01/05/exploring-privacypass.html"},"author":{"@type":"Person","name":"Kobi"},"description":"This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a fully-compatible implementation of Privacy Pass in Rust.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -131,9 +133,9 @@ On the one hand, these challenges protect the websites - no non-humans may acces
 <p>If Cloudflare would have liked, they could track the user across multiple sites. To show a concrete example:</p>
 
 <ul>
-  <li>The user, being at home, would have gone to kobi.one, see a challenge and solve it, let’s denote the solution <script type="math/tex">S</script>. They would send the solution to Cloudflare, containing the solution <script type="math/tex">S</script> and natually their home IP.</li>
-  <li>Cloudflare would approve the solution, and send passes <script type="math/tex">P_1, ... P_N</script>. Additionally, they would store in their database the connection between <script type="math/tex">S</script>, each <script type="math/tex">P_i</script> and the user’s IP.</li>
-  <li>Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass <script type="math/tex">P_i</script> with the user.</li>
+  <li>The user, being at home, would have gone to kobi.one, see a challenge and solve it, let’s denote the solution \(S\). They would send the solution to Cloudflare, containing the solution \(S\) and natually their home IP.</li>
+  <li>Cloudflare would approve the solution, and send passes \(P_1, ... P_N\). Additionally, they would store in their database the connection between \(S\), each \(P_i\) and the user’s IP.</li>
+  <li>Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass \(P_i\) with the user.</li>
 </ul>
 
 <p>Cloudflare could obviously <em>not</em> store this data, and that would require putting the trust in Cloudflare. While they might deserve it, you can do better.</p>
@@ -144,54 +146,54 @@ On the one hand, these challenges protect the websites - no non-humans may acces
 
 <p>Without diving too much into elliptic-curves, I’ll remind some basic facts.</p>
 
-<p>Elliptic curves, being curves, have points. You can define the <script type="math/tex">+</script> operation on points, such that given points <script type="math/tex">P</script> and <script type="math/tex">Q</script> on the curve, you will get a third point <script type="math/tex">R</script> which is the result of <script type="math/tex">P+Q</script>. To see how to define this visually, you can see it, for example, <a href="https://www.certicom.com/content/certicom/en/21-elliptic-curve-addition-a-geometric-approach.html" target="_blank">here</a>.</p>
+<p>Elliptic curves, being curves, have points. You can define the \(+\) operation on points, such that given points \(P\) and \(Q\) on the curve, you will get a third point \(R\) which is the result of \(P+Q\). To see how to define this visually, you can see it, for example, <a href="https://www.certicom.com/content/certicom/en/21-elliptic-curve-addition-a-geometric-approach.html" target="_blank">here</a>.</p>
 
-<p>You can also define adding a point <script type="math/tex">G</script> to itself <script type="math/tex">n</script> times (<script type="math/tex">G+...+G</script> with <script type="math/tex">n-1</script> additions). Call this operation <script type="math/tex">n \cdot G</script>.</p>
+<p>You can also define adding a point \(G\) to itself \(n\) times (\(G+...+G\) with \(n-1\) additions). Call this operation \(n \cdot G\).</p>
 
-<p>You can ask, given points <script type="math/tex">G</script> and <script type="math/tex">Y</script>, “how many times would I have to add <script type="math/tex">G</script> to itself in order to get <script type="math/tex">H</script>?” That is, what is the <script type="math/tex">n</script> such that <script type="math/tex">n \cdot G = H</script>? This is a hard problem in elliptic-curve cryptography, called the <a href="https://en.wikipedia.org/wiki/Discrete_logarithm" target="_blank">Discrete Logarithm Problem</a>.</p>
+<p>You can ask, given points \(G\) and \(Y\), “how many times would I have to add \(G\) to itself in order to get \(H\)?” That is, what is the \(n\) such that \(n \cdot G = H\)? This is a hard problem in elliptic-curve cryptography, called the <a href="https://en.wikipedia.org/wiki/Discrete_logarithm" target="_blank">Discrete Logarithm Problem</a>.</p>
 
 <h3 id="blind-signatures">Blind signatures</h3>
 
 <p>Now we begin solving the problem of tracking. First, let’s expand our protocol and describe it in more detail.</p>
 
-<p>Let’s say the secret key of the Privacy Pass server is the number <script type="math/tex">x</script> and there’s a publicly known point on the curve called <script type="math/tex">G</script> and execute the protocol as follows:</p>
+<p>Let’s say the secret key of the Privacy Pass server is the number \(x\) and there’s a publicly known point on the curve called \(G\) and execute the protocol as follows:</p>
 
 <ul>
-  <li>The user, requesting passes, will create a random token <script type="math/tex">t</script> and send the server the point <script type="math/tex">t \cdot G</script>, denoting it <script type="math/tex">T</script>. The server will not be able to know <script type="math/tex">t</script> because of the Discrete Logarithm Problem.</li>
-  <li>The server will create the point <script type="math/tex">x \cdot T</script>. Let’s call it a <em>signature</em> and denote it <script type="math/tex">Z</script>. The user will not be able to uncover <script type="math/tex">x</script> because of DLP.</li>
-  <li>The server will send the signature to the user, which later on will be able to use this signature to prove they received it from the server. Since only the server knows <script type="math/tex">x</script>, only the server could create <script type="math/tex">Z = x \cdot T</script>, and so the server will know they have created these signatures.</li>
+  <li>The user, requesting passes, will create a random token \(t\) and send the server the point \(t \cdot G\), denoting it \(T\). The server will not be able to know \(t\) because of the Discrete Logarithm Problem.</li>
+  <li>The server will create the point \(x \cdot T\). Let’s call it a <em>signature</em> and denote it \(Z\). The user will not be able to uncover \(x\) because of DLP.</li>
+  <li>The server will send the signature to the user, which later on will be able to use this signature to prove they received it from the server. Since only the server knows \(x\), only the server could create \(Z = x \cdot T\), and so the server will know they have created these signatures.</li>
 </ul>
 
-<p>This has the problem of tracking, since the server will be able to store all this data and correlate it to the user when the <script type="math/tex">Z</script>s is used by the user.</p>
+<p>This has the problem of tracking, since the server will be able to store all this data and correlate it to the user when the \(Z\)s is used by the user.</p>
 
-<p>The user, instead of sending <script type="math/tex">T</script> directly can use a <em>blinding factor</em> <script type="math/tex">r</script> to create <script type="math/tex">M = r \cdot T = r \cdot t \cdot G</script>. We call this a <em>blinded token</em>. Now, when receiving the signature <script type="math/tex">Z</script> over each <script type="math/tex">M</script>, the user will <em>unblind</em> the signature by multiplying by the inverse of <script type="math/tex">r</script>: <script type="math/tex">r^{-1} \cdot Z = r^{-1} \cdot x \cdot M = r^{-1} \cdot x \cdot r \cdot T = r^{-1} \cdot r \cdot x \cdot T = x \cdot T</script>. Let’s denote this result <script type="math/tex">N</script>.</p>
+<p>The user, instead of sending \(T\) directly can use a <em>blinding factor</em> \(r\) to create \(M = r \cdot T = r \cdot t \cdot G\). We call this a <em>blinded token</em>. Now, when receiving the signature \(Z\) over each \(M\), the user will <em>unblind</em> the signature by multiplying by the inverse of \(r\): \(r^{-1} \cdot Z = r^{-1} \cdot x \cdot M = r^{-1} \cdot x \cdot r \cdot T = r^{-1} \cdot r \cdot x \cdot T = x \cdot T\). Let’s denote this result \(N\).</p>
 
-<p>Although the user could cacluate <script type="math/tex">N</script>, they could never generate it by themselves - since they don’t know <script type="math/tex">x</script>. Presenting the server <script type="math/tex">t</script> and <script type="math/tex">N</script> allows the server to verify they indeed the ones who generated this signature, and the server will not know which <em>blinded token</em> this signature relates to since they never knew the <em>blinding factor</em> <script type="math/tex">r</script>.</p>
+<p>Although the user could cacluate \(N\), they could never generate it by themselves - since they don’t know \(x\). Presenting the server \(t\) and \(N\) allows the server to verify they indeed the ones who generated this signature, and the server will not know which <em>blinded token</em> this signature relates to since they never knew the <em>blinding factor</em> \(r\).</p>
 
 <p>The protocol now looks like this:</p>
 
 <ul>
-  <li>The user, requesting passes, will create a random token <script type="math/tex">t</script> and a blinding factor <script type="math/tex">r</script> and send the server the point <script type="math/tex">r \cdot t\cdot G</script>, denoting it <script type="math/tex">M</script>.</li>
-  <li>The server will create the point <script type="math/tex">x \cdot M</script>. The server generates a signature <script type="math/tex">Z</script>.</li>
-  <li>The server will send the signature to the user, and the user unblinds the signature, calculating and storing <script type="math/tex">N=r^{-1} \cdot M</script>.</li>
-  <li>The user later on presents <script type="math/tex">t</script> and <script type="math/tex">N</script> to the server when they would like to prove their humanity.</li>
+  <li>The user, requesting passes, will create a random token \(t\) and a blinding factor \(r\) and send the server the point \(r \cdot t\cdot G\), denoting it \(M\).</li>
+  <li>The server will create the point \(x \cdot M\). The server generates a signature \(Z\).</li>
+  <li>The server will send the signature to the user, and the user unblinds the signature, calculating and storing \(N=r^{-1} \cdot M\).</li>
+  <li>The user later on presents \(t\) and \(N\) to the server when they would like to prove their humanity.</li>
 </ul>
 
 <p>It sounds very good! Unfortunately, this doesn’t solve the problem of tracking, which might not be immediately obvious.</p>
 
-<p>Assuming the server uses the same secret key <script type="math/tex">x</script> for all the users requesting passes, this works well. What if the server uses a different <script type="math/tex">x</script> for every user? We’re right back to square one - the server, when verifying the signature, will be able to iterate over all the different <script type="math/tex">x</script>s they generated and thus identify the user.</p>
+<p>Assuming the server uses the same secret key \(x\) for all the users requesting passes, this works well. What if the server uses a different \(x\) for every user? We’re right back to square one - the server, when verifying the signature, will be able to iterate over all the different \(x\)s they generated and thus identify the user.</p>
 
-<p>This is why it’s important for the server to show it indeed uses the same secret key <script type="math/tex">x</script> for all the users. This is done by using a <em>Discrete Logarithm Equality Proof</em>.</p>
+<p>This is why it’s important for the server to show it indeed uses the same secret key \(x\) for all the users. This is done by using a <em>Discrete Logarithm Equality Proof</em>.</p>
 
 <h3 id="discrete-logarithm-equality-proof">Discrete Logarithm Equality Proof</h3>
 
-<p>The server already publishes one point publicly - <script type="math/tex">G</script>. The server could publish publicly an additional point <script type="math/tex">Y=x \cdot G</script>. This is essentially a <em>commitment</em> to the secret key <script type="math/tex">x</script>.</p>
+<p>The server already publishes one point publicly - \(G\). The server could publish publicly an additional point \(Y=x \cdot G\). This is essentially a <em>commitment</em> to the secret key \(x\).</p>
 
 <p>The construction of how <em>DLEQ</em> works requires a bit more math, and I prefer not getting into it in this post. That said, I would like to give a few points to those interested:</p>
 <ul>
-  <li>It is similar to the Schnorr identification scheme, proving that the server knows the secret key <script type="math/tex">x</script> - essentially proving knowledge of “<script type="math/tex">Y/G</script>”.</li>
+  <li>It is similar to the Schnorr identification scheme, proving that the server knows the secret key \(x\) - essentially proving knowledge of “\(Y/G\)”.</li>
   <li>It uses the non-interactive variant of the scheme using the Fiat-Shamir heuristic, which also has an <a href="https://tools.ietf.org/html/rfc8235" target="_blank">IETF RFC</a>, converting it from an <em>honest-verifier zero-knowledge</em> scheme to a <em>non-interactive zero knowledge argument</em>.</li>
-  <li>Instead of only proving knowledge of <script type="math/tex">Y/G</script>, it also shows that the <em>same</em> proof applies to <script type="math/tex">Z/M</script>. This means that the publicly committed secret key, as shown in <script type="math/tex">Y</script>, is the <em>same</em> one used to create <script type="math/tex">Z</script> for <script type="math/tex">M</script>, proving that the server used the same secret key to generate the signature.</li>
+  <li>Instead of only proving knowledge of \(Y/G\), it also shows that the <em>same</em> proof applies to \(Z/M\). This means that the publicly committed secret key, as shown in \(Y\), is the <em>same</em> one used to create \(Z\) for \(M\), proving that the server used the same secret key to generate the signature.</li>
 </ul>
 
 <p>A nice description of <em>DLEQ</em> and some of these details are described in <a href="https://blog.cryptographyengineering.com/2017/01/21/zero-knowledge-proofs-an-illustrated-primer-part-2/" target="_blank">this post by Matthew Green</a>.</p>

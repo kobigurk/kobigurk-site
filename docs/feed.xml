@@ -1,4 +1,227 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.0.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2020-03-31T18:47:36+03:00</updated><id>/feed.xml</id><entry><title type="html">Sapling audit</title><link href="/2019/01/31/sapling-audit.html" rel="alternate" type="text/html" title="Sapling audit" /><published>2019-01-31T00:00:00+02:00</published><updated>2019-01-31T00:00:00+02:00</updated><id>/2019/01/31/sapling-audit</id><content type="html" xml:base="/2019/01/31/sapling-audit.html">&lt;p&gt;Cross-posting from Medium, where we describe the audit we performed to Zcash Sapling. &lt;a href=&quot;https://medium.com/qed-it/sapling-audit-9b531be9d30&quot; target=&quot;_blank&quot;&gt;Check it out here.&lt;/a&gt;&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Cross-posting from Medium, where we describe the audit we performed to Zcash Sapling. Check it out here.</summary></entry><entry><title type="html">Exploring Privacy Pass</title><link href="/2019/01/05/exploring-privacypass.html" rel="alternate" type="text/html" title="Exploring Privacy Pass" /><published>2019-01-05T00:00:00+02:00</published><updated>2019-01-05T00:00:00+02:00</updated><id>/2019/01/05/exploring-privacypass</id><content type="html" xml:base="/2019/01/05/exploring-privacypass.html">&lt;p&gt;This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a &lt;a href=&quot;https://github.com/kobigurk/privacypass-rs&quot; target=&quot;_blank&quot;&gt;fully-compatible implementation of Privacy Pass in Rust&lt;/a&gt;.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-05-20T22:50:54+03:00</updated><id>/feed.xml</id><entry><title type="html">PLONK custom gates design considerations</title><link href="/2021/05/20/plonk-custom-gates.html" rel="alternate" type="text/html" title="PLONK custom gates design considerations" /><published>2021-05-20T00:00:00+03:00</published><updated>2021-05-20T00:00:00+03:00</updated><id>/2021/05/20/plonk-custom-gates</id><content type="html" xml:base="/2021/05/20/plonk-custom-gates.html">&lt;p&gt;Thanks to Zac Williamson and Kev for explaining ideas that helped form this document. Thanks to Han for spotting a mistake in “Approach 2” of the MiMC custom gate that could lead to breaking soundness.&lt;/p&gt;
+
+&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;PLONK has flexible arithmetization, and can quite easily express complex polynomial gates. “Basic PLONK”, as defined in the &lt;a href=&quot;https://eprint.iacr.org/2019/953.pdf&quot;&gt;paper&lt;/a&gt;, defines only fan-in 2 arithmetic gates. The purpose of this document is to show what are custom gates and how they affect the performance of a PLONK proof.&lt;/p&gt;
+
+&lt;p&gt;At a high level, PLONK defines the gates as part of a “quotient polynomial” \(t(x)\) - if this polynomial is zero at the points that represents gates, then the constraint system is satisfied.&lt;/p&gt;
+
+&lt;p&gt;The arithmetic gate contribution to the quotient polynomial is defined as:&lt;/p&gt;
+
+\[a(X)b(X)q_M(X) + a(X)q_L(X) + b(X)q_R(X) + c(X)q_O(X) + PI(X) + q_C(X)\]
+
+&lt;p&gt;For example, a multiplication gate that calculates \(xy = z\) is going to have:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+\[a(g^i) = x\]
+  &lt;/li&gt;
+  &lt;li&gt;
+\[b(g^i) = y\]
+  &lt;/li&gt;
+  &lt;li&gt;
+\[c(g^i) = z\]
+  &lt;/li&gt;
+  &lt;li&gt;
+\[q_M(g^i) = 1\]
+  &lt;/li&gt;
+  &lt;li&gt;
+\[q_O(g^i) = -1\]
+  &lt;/li&gt;
+  &lt;li&gt;
+\[q_L(g^i), q_R(g^i), PI(g^i), q_C(g^i) = 0\]
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;basic-plonk&quot;&gt;Basic PLONK&lt;/h1&gt;
+
+&lt;p&gt;“Basic PLONK” has the following performance characteristics:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Proof size of \(9\mathbb{G}_1\) + \(7\mathbb{F}\) arising from:
+ a. Commitments to the wires polynomials \(a(x)\), \(b(x)\), \(c(x)\)
+ b. Commitment to the permutation polynomial \(z(x)\)
+ c. Commitments to 3 \(n-\)degree polynomials, components of the \(3n-\)degree quotient polynomial \(t(x)\)
+ d. Commitment to the opening polynomial \(W_z(x)\), ensuring sure the evaluations of \(t(x), r(x), a(x), b(x), c(x), S_{\sigma_1}, S_{\sigma_2}\) are correct at \(z\)
+ e. Commitment to the opening polynomial \(W_{zw}(x)\), ensuring the evaluation of \(z(x)\) is correct at \(zw\)&lt;/li&gt;
+  &lt;li&gt;Proving complexity of:
+ a. \(9n\) \(\mathbb{G}_1\) exponentiations resulting from computing commitments of polynomials of degree \(n\): 3 from 1a, 1 from 1b, 3 from 1c, 1 from 1d, 1 from 1e
+ b. Roughly \(54n\) field operations from FFTs:
+    &lt;ul&gt;
+      &lt;li&gt;8 of degree \(4n\) from:
+        &lt;ul&gt;
+          &lt;li&gt;The contribution of the permutation argument - 3 for $$\sigma_{0,1,2}&lt;/li&gt;
+          &lt;li&gt;1 for \(z\)&lt;/li&gt;
+          &lt;li&gt;3 for the \(a, b, c\) wires polynomials&lt;/li&gt;
+          &lt;li&gt;1 inverse transform for the quotient polynomial itself at degree \(4n\)&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+      &lt;li&gt;6 of degree \(2n\) from:
+        &lt;ul&gt;
+          &lt;li&gt;The contribution of the arithmetic gate - \(q_M, q_L, q_R, q_O\) and \(q_C\)&lt;/li&gt;
+          &lt;li&gt;1 inverse transform for the quotient polynomial itself at degree \(2n\)&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+      &lt;li&gt;12 of degree \(n\) from:
+        &lt;ul&gt;
+          &lt;li&gt;12 inverse transforms on all the polynomials we need to perform FFT on&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Verification complexity of (discounting field operations and hashes):
+    &lt;ul&gt;
+      &lt;li&gt;18 exponentiations in \(\mathbb{G}_1\):
+        &lt;ul&gt;
+          &lt;li&gt;6 from the linearization polynomial opening:
+            &lt;ul&gt;
+              &lt;li&gt;5 from the arithmetic gate polynomials \(q_M, q_L, q_R, q_O\) and \(q_C\)&lt;/li&gt;
+              &lt;li&gt;1 from the \(z\) polynomial&lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/li&gt;
+          &lt;li&gt;9 from the quotient polynomial opening:
+            &lt;ul&gt;
+              &lt;li&gt;3 from the \(n-\)degree parts of \(t\)&lt;/li&gt;
+              &lt;li&gt;3 from the wire polynomials \(a, b\) and \(c\)&lt;/li&gt;
+              &lt;li&gt;2 from the permutation polynomials \(s_{\sigma1}, s_{\sigma2}\)&lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/li&gt;
+          &lt;li&gt;1 from the evaluation commitment - containing all the evaluations of the opened polynomials&lt;/li&gt;
+          &lt;li&gt;1 from the polynomial commitment argument for evaluation at \(z\) - the random opening point&lt;/li&gt;
+          &lt;li&gt;1 from the polynomial commitment argument for evaluation at \(zw\) - the random opening point + 1&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Given \(n\) being the number of arithmetic gates, basic PLONK has a quotient polynomial of degree \(3n\). The arithmetic gate part itself has only degree \(2n\), and the \(3n\) degree stems from the permutation argument on the wire polynomials.&lt;/p&gt;
+
+&lt;h1 id=&quot;designing-a-custom-gate&quot;&gt;Designing a custom gate&lt;/h1&gt;
+
+&lt;p&gt;When designing a custom gate, you can change multiple characteristics.&lt;/p&gt;
+
+&lt;h2 id=&quot;existing-wires&quot;&gt;Existing wires&lt;/h2&gt;
+
+&lt;p&gt;If you’re introducing a new polynomial gate on existing wires, you affect:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Quotient polynomial contribution, which defines the constraints the custom gate verifies&lt;/li&gt;
+  &lt;li&gt;Linearization polynomial contribution, which defines a partially evaluated quotient polynomial contribution, such that the contribution doesn’t contain polynomial products of committed polynomials&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If you increase the degree of the quotient polynomial, you will affect:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;If the degree of the gate is \(&amp;lt; 3n\), then you pay in FFTs of degree \(2n\) on new selector polynomials, and if there’s a product of selector polynomials, then opening of some of them until you reach a linear polynomial&lt;/li&gt;
+  &lt;li&gt;If the degree of the gate is \(&amp;gt; 3n, \leq 4n\) (meaning the degree of the quotient polynomial is still \(\leq 3n\)), then you similarly pay in openings and FFTs become of degree \(4n\)&lt;/li&gt;
+  &lt;li&gt;If the degree of the gate is \(&amp;gt; 4n\) and we still want to use the same fast-proving method, you pay in:
+    &lt;ul&gt;
+      &lt;li&gt;Similarly, in openings&lt;/li&gt;
+      &lt;li&gt;FFTs of degree \(&amp;gt;4n\). E.g., if degree is \(5n\) and assuming radix-2 FFTs, then FFT of degree \(8n\)&lt;/li&gt;
+      &lt;li&gt;Another commitment for every \(n-\)degree increase, making the proof larger by one group element and an additional scalar multiplication of size \(&amp;lt;=n\). Additionally, the verifier will pay a scalar multiplication for each \(n-\)degree increase&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Additionally, you pay a scalar multiplication in verification for each selector polynomial you introduce.&lt;/p&gt;
+
+&lt;h2 id=&quot;adjacent-wires&quot;&gt;Adjacent wires&lt;/h2&gt;
+
+&lt;p&gt;If you’re introducing adjacent wires (\(a_{i+1}, b_{i+1}, c_{i+1}\)), you need to add the opening of these values at \(zw\), so 1 additional field element for each of the required openings, but no significant increase in prover/verifier times - the prover needs to evaluate at the new points, and the verifier already has a polynomial commitment opening at \(zw\), so it folds into that&lt;/p&gt;
+
+&lt;h2 id=&quot;further-wires&quot;&gt;Further wires&lt;/h2&gt;
+
+&lt;p&gt;If you want access to more wires, e.g. \(a_{i+k}, b_{i+k}, c_{i+k}\), you similarly needs an opening at \(zw^{k}\), so 1 additionaly field element for each of the required openings. The prover similarly to the adjacent wires case needs to evaluate at additional points. There is another significant cost increase for both the prover and the verifier though - the prover needs to commit to the opening polynomial at \(zw^{k}\), which is another \(n-\)degree exponentiation and an additional group element in the proof, and the verifier has to open it, requiring an additional scalar multiplication.&lt;/p&gt;
+
+&lt;h2 id=&quot;additional-wires&quot;&gt;Additional wires&lt;/h2&gt;
+
+&lt;p&gt;If you’d like to introduce additional wires above \(a,b,c\), you could do it in multiple ways.&lt;/p&gt;
+
+&lt;p&gt;One way is to introduce wires that are accessible throughout all the gates - introduce more \(n-\)degree polynomials, e.g. \(d(x), e(x)\) and so on. This would cause:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Increase of the permutation polynomial degree, causing the quotient polynomial degree to increase, and in turn increase the FFT degrees, a commitment and a scalar multiplication for each additional wire polynomial because of the \(n-\)degree increase in the quotient polynomial&lt;/li&gt;
+  &lt;li&gt;An additional group element in the proof for each additional wire - a commitment to the wire polynomial&lt;/li&gt;
+  &lt;li&gt;An additional field element in the proof for each additional wire - the evaluation of the corresponding \(S_{\sigma_i}\)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Another way is to introduce wires that are accessible only for half of the gates, i.e. for the use in exotic gates.&lt;/p&gt;
+
+&lt;p&gt;Zac wrote about it:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;The trick is to add a second verification equation for your basic plonk gates.
+
+Split each degree-n A(X), B(X), C(X) into two degree n/2 polynomials A1(X), A2(X), B1(X), B2(X), C1(X), C2(X).
+
+Also do this splitting process with the selector polynomials Qm(X), Ql(X), Qr(X), Qo(X), Qc(X).
+
+In addition to the original plonk gate equation, add a second:
+
+Qm2(X).A2(X).B2(X) + Ql2(X).A2(X) + Qr2(X).B2(X) + Qo2(X).C2(X) + Qc2(X) + 0 mod Z_H(X)
+
+You can then add in additional verification equations for exotic gates with 6 wires.
+
+Because the degrees of your polynomials are half what they used to be, prover compute times haven’t increased (2x the polynomials, but the degrees have been halved). 
+
+The permutation check now operates on six witness polynomials instead of three - so the maximum degree of your quotient polynomial is still degree 3n.
+
+This also gives you some extra wiggle room - your exotic 6-wire gate equation can be a degree-6 polynomial, without increasing the degree of the quotient polynomial
+
+The trade off with all of this, is increased verification time and increased proof size - each new selector polynomial and each new wire commitment will add 1 scalar mul into the verification equations, which starts to add up
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;example---mimc7&quot;&gt;Example - MiMC7&lt;/h1&gt;
+
+&lt;p&gt;To calculate a MiMC7 round function for round \(i\), we need to calculate \((x+k+c_i)^7\), where \(x,k\) are inputs and \(c_i\) is a constant&lt;/p&gt;
+
+&lt;h2 id=&quot;approach-1---using-arithmetic-gates&quot;&gt;Approach 1 - using arithmetic gates&lt;/h2&gt;
+
+&lt;p&gt;We would define the following gates:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;An add gate to calculate \(t = x+k+c_i\)&lt;/li&gt;
+  &lt;li&gt;A multiplication gate to calculate \(t^2\)&lt;/li&gt;
+  &lt;li&gt;A multiplication gate to calculate \(t^3\)&lt;/li&gt;
+  &lt;li&gt;A multiplication gate to calculate \(t^6\)&lt;/li&gt;
+  &lt;li&gt;A multiplication gate to claculate \(t^7\)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In total, 5 constraints.&lt;/p&gt;
+
+&lt;h2 id=&quot;approach-2---using-a-custom-gate-of-degree-7&quot;&gt;Approach 2 - using a custom gate of degree 7&lt;/h2&gt;
+
+&lt;p&gt;We augment the quotient polynomial with the following contribution:&lt;/p&gt;
+
+\[(c(x) - (a(x) + b(x) + q_{mc}(x))^7)q_{mimc}(x)\]
+
+&lt;p&gt;This makes the quotient polynomial of degree \(7n\).&lt;/p&gt;
+
+&lt;p&gt;Assuming we’re still using the fast-proving method, this adds 2 scalar multiplications for the verifier, for the two new selector gates. The verifier also pays by 4 additional scalar multiplications because of the 4 degree increase in the quotient polynomial.&lt;/p&gt;
+
+&lt;p&gt;The proof becomes larger by 4 group elements.&lt;/p&gt;
+
+&lt;h2 id=&quot;approach-3---using-a-custom-gate-of-degree-3-and-an-adjacent-wire&quot;&gt;Approach 3 - using a custom gate of degree 3 and an adjacent wire&lt;/h2&gt;
+
+&lt;p&gt;We augment the quotient polynomial with the following contribution:&lt;/p&gt;
+
+\[(((c(x) + a(x) + q_{mc}(x))^3 - b(x))\alpha + (c(x) + a(x) + q_{mc}(x)).b(x)^2 - c(xw) )\alpha^2)q_{mimc}(x)\]
+
+&lt;p&gt;This gate works by verifying that \(b(x)\) contains the \(t^3\), and proceeds to put \(t^7\) in \(c_{i+1}\).&lt;/p&gt;
+
+&lt;p&gt;The random \(alpha\) coefficients enforce that each individual term will be \(0\).&lt;/p&gt;
+
+&lt;p&gt;This doesn’t increase the quotient polynomial degree, and thererfore proving times are similar - only a few more evaluations.&lt;/p&gt;
+
+&lt;p&gt;We pay in:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;2 scalar multiplications by the verifier for the two new selectors \(q_{mc}(x), q_{mimc}(x)\)&lt;/li&gt;
+  &lt;li&gt;Additional field element in the proof - \(c(zw)\)&lt;/li&gt;
+  &lt;li&gt;Additional field element in the proof - \(q_{mc}(z)\)&lt;/li&gt;
+  &lt;li&gt;We don’t pay in a field element for \(q_{mimc}(z)\) - it’s reflected in the linearizer&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;We’ve listed a few methods to use the flexibility of the arithmetization step and listed different trade-offs a custom gate designer can take, together with an example of a MiMC7 gate.&lt;/p&gt;
+
+&lt;p&gt;We hope that this note proves useful for those learning and using custom gates.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Thanks to Zac Williamson and Kev for explaining ideas that helped form this document. Thanks to Han for spotting a mistake in “Approach 2” of the MiMC custom gate that could lead to breaking soundness.</summary></entry><entry><title type="html">Sapling audit</title><link href="/2019/01/31/sapling-audit.html" rel="alternate" type="text/html" title="Sapling audit" /><published>2019-01-31T00:00:00+02:00</published><updated>2019-01-31T00:00:00+02:00</updated><id>/2019/01/31/sapling-audit</id><content type="html" xml:base="/2019/01/31/sapling-audit.html">&lt;p&gt;Cross-posting from Medium, where we describe the audit we performed to Zcash Sapling. &lt;a href=&quot;https://medium.com/qed-it/sapling-audit-9b531be9d30&quot; target=&quot;_blank&quot;&gt;Check it out here.&lt;/a&gt;&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Cross-posting from Medium, where we describe the audit we performed to Zcash Sapling. Check it out here.</summary></entry><entry><title type="html">Exploring Privacy Pass</title><link href="/2019/01/05/exploring-privacypass.html" rel="alternate" type="text/html" title="Exploring Privacy Pass" /><published>2019-01-05T00:00:00+02:00</published><updated>2019-01-05T00:00:00+02:00</updated><id>/2019/01/05/exploring-privacypass</id><content type="html" xml:base="/2019/01/05/exploring-privacypass.html">&lt;p&gt;This post explores Privacy Pass, a protocol which “lets users prove their identity across multiple sites anonymously without enabling tracking”. We will go through the protocol components and eventually see a &lt;a href=&quot;https://github.com/kobigurk/privacypass-rs&quot; target=&quot;_blank&quot;&gt;fully-compatible implementation of Privacy Pass in Rust&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h2 id=&quot;privacy-in-the-internet&quot;&gt;Privacy in the internet&lt;/h2&gt;
 
@@ -51,9 +274,9 @@ On the one hand, these challenges protect the websites - no non-humans may acces
 &lt;p&gt;If Cloudflare would have liked, they could track the user across multiple sites. To show a concrete example:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;The user, being at home, would have gone to kobi.one, see a challenge and solve it, let’s denote the solution &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt;. They would send the solution to Cloudflare, containing the solution &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt; and natually their home IP.&lt;/li&gt;
-  &lt;li&gt;Cloudflare would approve the solution, and send passes &lt;script type=&quot;math/tex&quot;&gt;P_1, ... P_N&lt;/script&gt;. Additionally, they would store in their database the connection between &lt;script type=&quot;math/tex&quot;&gt;S&lt;/script&gt;, each &lt;script type=&quot;math/tex&quot;&gt;P_i&lt;/script&gt; and the user’s IP.&lt;/li&gt;
-  &lt;li&gt;Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass &lt;script type=&quot;math/tex&quot;&gt;P_i&lt;/script&gt; with the user.&lt;/li&gt;
+  &lt;li&gt;The user, being at home, would have gone to kobi.one, see a challenge and solve it, let’s denote the solution \(S\). They would send the solution to Cloudflare, containing the solution \(S\) and natually their home IP.&lt;/li&gt;
+  &lt;li&gt;Cloudflare would approve the solution, and send passes \(P_1, ... P_N\). Additionally, they would store in their database the connection between \(S\), each \(P_i\) and the user’s IP.&lt;/li&gt;
+  &lt;li&gt;Next, when the user uses one of the passes in other websites, maybe from a coffee shop having a different IP, Cloudflare would be able to correlate the usage of pass \(P_i\) with the user.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Cloudflare could obviously &lt;em&gt;not&lt;/em&gt; store this data, and that would require putting the trust in Cloudflare. While they might deserve it, you can do better.&lt;/p&gt;
@@ -64,54 +287,54 @@ On the one hand, these challenges protect the websites - no non-humans may acces
 
 &lt;p&gt;Without diving too much into elliptic-curves, I’ll remind some basic facts.&lt;/p&gt;
 
-&lt;p&gt;Elliptic curves, being curves, have points. You can define the &lt;script type=&quot;math/tex&quot;&gt;+&lt;/script&gt; operation on points, such that given points &lt;script type=&quot;math/tex&quot;&gt;P&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;Q&lt;/script&gt; on the curve, you will get a third point &lt;script type=&quot;math/tex&quot;&gt;R&lt;/script&gt; which is the result of &lt;script type=&quot;math/tex&quot;&gt;P+Q&lt;/script&gt;. To see how to define this visually, you can see it, for example, &lt;a href=&quot;https://www.certicom.com/content/certicom/en/21-elliptic-curve-addition-a-geometric-approach.html&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Elliptic curves, being curves, have points. You can define the \(+\) operation on points, such that given points \(P\) and \(Q\) on the curve, you will get a third point \(R\) which is the result of \(P+Q\). To see how to define this visually, you can see it, for example, &lt;a href=&quot;https://www.certicom.com/content/certicom/en/21-elliptic-curve-addition-a-geometric-approach.html&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;You can also define adding a point &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; to itself &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; times (&lt;script type=&quot;math/tex&quot;&gt;G+...+G&lt;/script&gt; with &lt;script type=&quot;math/tex&quot;&gt;n-1&lt;/script&gt; additions). Call this operation &lt;script type=&quot;math/tex&quot;&gt;n \cdot G&lt;/script&gt;.&lt;/p&gt;
+&lt;p&gt;You can also define adding a point \(G\) to itself \(n\) times (\(G+...+G\) with \(n-1\) additions). Call this operation \(n \cdot G\).&lt;/p&gt;
 
-&lt;p&gt;You can ask, given points &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;, “how many times would I have to add &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; to itself in order to get &lt;script type=&quot;math/tex&quot;&gt;H&lt;/script&gt;?” That is, what is the &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; such that &lt;script type=&quot;math/tex&quot;&gt;n \cdot G = H&lt;/script&gt;? This is a hard problem in elliptic-curve cryptography, called the &lt;a href=&quot;https://en.wikipedia.org/wiki/Discrete_logarithm&quot; target=&quot;_blank&quot;&gt;Discrete Logarithm Problem&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;You can ask, given points \(G\) and \(Y\), “how many times would I have to add \(G\) to itself in order to get \(H\)?” That is, what is the \(n\) such that \(n \cdot G = H\)? This is a hard problem in elliptic-curve cryptography, called the &lt;a href=&quot;https://en.wikipedia.org/wiki/Discrete_logarithm&quot; target=&quot;_blank&quot;&gt;Discrete Logarithm Problem&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h3 id=&quot;blind-signatures&quot;&gt;Blind signatures&lt;/h3&gt;
 
 &lt;p&gt;Now we begin solving the problem of tracking. First, let’s expand our protocol and describe it in more detail.&lt;/p&gt;
 
-&lt;p&gt;Let’s say the secret key of the Privacy Pass server is the number &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; and there’s a publicly known point on the curve called &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt; and execute the protocol as follows:&lt;/p&gt;
+&lt;p&gt;Let’s say the secret key of the Privacy Pass server is the number \(x\) and there’s a publicly known point on the curve called \(G\) and execute the protocol as follows:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;The user, requesting passes, will create a random token &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and send the server the point &lt;script type=&quot;math/tex&quot;&gt;t \cdot G&lt;/script&gt;, denoting it &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt;. The server will not be able to know &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; because of the Discrete Logarithm Problem.&lt;/li&gt;
-  &lt;li&gt;The server will create the point &lt;script type=&quot;math/tex&quot;&gt;x \cdot T&lt;/script&gt;. Let’s call it a &lt;em&gt;signature&lt;/em&gt; and denote it &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;. The user will not be able to uncover &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; because of DLP.&lt;/li&gt;
-  &lt;li&gt;The server will send the signature to the user, which later on will be able to use this signature to prove they received it from the server. Since only the server knows &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;, only the server could create &lt;script type=&quot;math/tex&quot;&gt;Z = x \cdot T&lt;/script&gt;, and so the server will know they have created these signatures.&lt;/li&gt;
+  &lt;li&gt;The user, requesting passes, will create a random token \(t\) and send the server the point \(t \cdot G\), denoting it \(T\). The server will not be able to know \(t\) because of the Discrete Logarithm Problem.&lt;/li&gt;
+  &lt;li&gt;The server will create the point \(x \cdot T\). Let’s call it a &lt;em&gt;signature&lt;/em&gt; and denote it \(Z\). The user will not be able to uncover \(x\) because of DLP.&lt;/li&gt;
+  &lt;li&gt;The server will send the signature to the user, which later on will be able to use this signature to prove they received it from the server. Since only the server knows \(x\), only the server could create \(Z = x \cdot T\), and so the server will know they have created these signatures.&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;This has the problem of tracking, since the server will be able to store all this data and correlate it to the user when the &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;s is used by the user.&lt;/p&gt;
+&lt;p&gt;This has the problem of tracking, since the server will be able to store all this data and correlate it to the user when the \(Z\)s is used by the user.&lt;/p&gt;
 
-&lt;p&gt;The user, instead of sending &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; directly can use a &lt;em&gt;blinding factor&lt;/em&gt; &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt; to create &lt;script type=&quot;math/tex&quot;&gt;M = r \cdot T = r \cdot t \cdot G&lt;/script&gt;. We call this a &lt;em&gt;blinded token&lt;/em&gt;. Now, when receiving the signature &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt; over each &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;, the user will &lt;em&gt;unblind&lt;/em&gt; the signature by multiplying by the inverse of &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt;: &lt;script type=&quot;math/tex&quot;&gt;r^{-1} \cdot Z = r^{-1} \cdot x \cdot M = r^{-1} \cdot x \cdot r \cdot T = r^{-1} \cdot r \cdot x \cdot T = x \cdot T&lt;/script&gt;. Let’s denote this result &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt;.&lt;/p&gt;
+&lt;p&gt;The user, instead of sending \(T\) directly can use a &lt;em&gt;blinding factor&lt;/em&gt; \(r\) to create \(M = r \cdot T = r \cdot t \cdot G\). We call this a &lt;em&gt;blinded token&lt;/em&gt;. Now, when receiving the signature \(Z\) over each \(M\), the user will &lt;em&gt;unblind&lt;/em&gt; the signature by multiplying by the inverse of \(r\): \(r^{-1} \cdot Z = r^{-1} \cdot x \cdot M = r^{-1} \cdot x \cdot r \cdot T = r^{-1} \cdot r \cdot x \cdot T = x \cdot T\). Let’s denote this result \(N\).&lt;/p&gt;
 
-&lt;p&gt;Although the user could cacluate &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt;, they could never generate it by themselves - since they don’t know &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;. Presenting the server &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt; allows the server to verify they indeed the ones who generated this signature, and the server will not know which &lt;em&gt;blinded token&lt;/em&gt; this signature relates to since they never knew the &lt;em&gt;blinding factor&lt;/em&gt; &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt;.&lt;/p&gt;
+&lt;p&gt;Although the user could cacluate \(N\), they could never generate it by themselves - since they don’t know \(x\). Presenting the server \(t\) and \(N\) allows the server to verify they indeed the ones who generated this signature, and the server will not know which &lt;em&gt;blinded token&lt;/em&gt; this signature relates to since they never knew the &lt;em&gt;blinding factor&lt;/em&gt; \(r\).&lt;/p&gt;
 
 &lt;p&gt;The protocol now looks like this:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;The user, requesting passes, will create a random token &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and a blinding factor &lt;script type=&quot;math/tex&quot;&gt;r&lt;/script&gt; and send the server the point &lt;script type=&quot;math/tex&quot;&gt;r \cdot t\cdot G&lt;/script&gt;, denoting it &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;.&lt;/li&gt;
-  &lt;li&gt;The server will create the point &lt;script type=&quot;math/tex&quot;&gt;x \cdot M&lt;/script&gt;. The server generates a signature &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt;.&lt;/li&gt;
-  &lt;li&gt;The server will send the signature to the user, and the user unblinds the signature, calculating and storing &lt;script type=&quot;math/tex&quot;&gt;N=r^{-1} \cdot M&lt;/script&gt;.&lt;/li&gt;
-  &lt;li&gt;The user later on presents &lt;script type=&quot;math/tex&quot;&gt;t&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;N&lt;/script&gt; to the server when they would like to prove their humanity.&lt;/li&gt;
+  &lt;li&gt;The user, requesting passes, will create a random token \(t\) and a blinding factor \(r\) and send the server the point \(r \cdot t\cdot G\), denoting it \(M\).&lt;/li&gt;
+  &lt;li&gt;The server will create the point \(x \cdot M\). The server generates a signature \(Z\).&lt;/li&gt;
+  &lt;li&gt;The server will send the signature to the user, and the user unblinds the signature, calculating and storing \(N=r^{-1} \cdot M\).&lt;/li&gt;
+  &lt;li&gt;The user later on presents \(t\) and \(N\) to the server when they would like to prove their humanity.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;It sounds very good! Unfortunately, this doesn’t solve the problem of tracking, which might not be immediately obvious.&lt;/p&gt;
 
-&lt;p&gt;Assuming the server uses the same secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for all the users requesting passes, this works well. What if the server uses a different &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for every user? We’re right back to square one - the server, when verifying the signature, will be able to iterate over all the different &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;s they generated and thus identify the user.&lt;/p&gt;
+&lt;p&gt;Assuming the server uses the same secret key \(x\) for all the users requesting passes, this works well. What if the server uses a different \(x\) for every user? We’re right back to square one - the server, when verifying the signature, will be able to iterate over all the different \(x\)s they generated and thus identify the user.&lt;/p&gt;
 
-&lt;p&gt;This is why it’s important for the server to show it indeed uses the same secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; for all the users. This is done by using a &lt;em&gt;Discrete Logarithm Equality Proof&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;This is why it’s important for the server to show it indeed uses the same secret key \(x\) for all the users. This is done by using a &lt;em&gt;Discrete Logarithm Equality Proof&lt;/em&gt;.&lt;/p&gt;
 
 &lt;h3 id=&quot;discrete-logarithm-equality-proof&quot;&gt;Discrete Logarithm Equality Proof&lt;/h3&gt;
 
-&lt;p&gt;The server already publishes one point publicly - &lt;script type=&quot;math/tex&quot;&gt;G&lt;/script&gt;. The server could publish publicly an additional point &lt;script type=&quot;math/tex&quot;&gt;Y=x \cdot G&lt;/script&gt;. This is essentially a &lt;em&gt;commitment&lt;/em&gt; to the secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;.&lt;/p&gt;
+&lt;p&gt;The server already publishes one point publicly - \(G\). The server could publish publicly an additional point \(Y=x \cdot G\). This is essentially a &lt;em&gt;commitment&lt;/em&gt; to the secret key \(x\).&lt;/p&gt;
 
 &lt;p&gt;The construction of how &lt;em&gt;DLEQ&lt;/em&gt; works requires a bit more math, and I prefer not getting into it in this post. That said, I would like to give a few points to those interested:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;It is similar to the Schnorr identification scheme, proving that the server knows the secret key &lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt; - essentially proving knowledge of “&lt;script type=&quot;math/tex&quot;&gt;Y/G&lt;/script&gt;”.&lt;/li&gt;
+  &lt;li&gt;It is similar to the Schnorr identification scheme, proving that the server knows the secret key \(x\) - essentially proving knowledge of “\(Y/G\)”.&lt;/li&gt;
   &lt;li&gt;It uses the non-interactive variant of the scheme using the Fiat-Shamir heuristic, which also has an &lt;a href=&quot;https://tools.ietf.org/html/rfc8235&quot; target=&quot;_blank&quot;&gt;IETF RFC&lt;/a&gt;, converting it from an &lt;em&gt;honest-verifier zero-knowledge&lt;/em&gt; scheme to a &lt;em&gt;non-interactive zero knowledge argument&lt;/em&gt;.&lt;/li&gt;
-  &lt;li&gt;Instead of only proving knowledge of &lt;script type=&quot;math/tex&quot;&gt;Y/G&lt;/script&gt;, it also shows that the &lt;em&gt;same&lt;/em&gt; proof applies to &lt;script type=&quot;math/tex&quot;&gt;Z/M&lt;/script&gt;. This means that the publicly committed secret key, as shown in &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;, is the &lt;em&gt;same&lt;/em&gt; one used to create &lt;script type=&quot;math/tex&quot;&gt;Z&lt;/script&gt; for &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt;, proving that the server used the same secret key to generate the signature.&lt;/li&gt;
+  &lt;li&gt;Instead of only proving knowledge of \(Y/G\), it also shows that the &lt;em&gt;same&lt;/em&gt; proof applies to \(Z/M\). This means that the publicly committed secret key, as shown in \(Y\), is the &lt;em&gt;same&lt;/em&gt; one used to create \(Z\) for \(M\), proving that the server used the same secret key to generate the signature.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;A nice description of &lt;em&gt;DLEQ&lt;/em&gt; and some of these details are described in &lt;a href=&quot;https://blog.cryptographyengineering.com/2017/01/21/zero-knowledge-proofs-an-illustrated-primer-part-2/&quot; target=&quot;_blank&quot;&gt;this post by Matthew Green&lt;/a&gt;.&lt;/p&gt;
@@ -239,7 +462,7 @@ yields A*B-C = 0.&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;The important part happens now — the prover, while not knowing Tau, can
-calculate “in-the-exponent” H(z) evaluated at Tau — &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;!&lt;/p&gt;
+calculate “in-the-exponent” H(z) evaluated at Tau — \(H(\tau)\)!&lt;/p&gt;
 
 &lt;p&gt;Why do we do that? Since by evaluating at the random point Tau, the prover shows
 with high probability that the equation H=(A*B-C)/Z holds for all z. From a
@@ -249,15 +472,15 @@ exact same value at that point.&lt;/p&gt;
 
 &lt;p&gt;How can we technically do that? By the fact that part of the setup process
 generated elements containing all the relevant powers of Tau, hidden in the
-exponent, given as &lt;script type=&quot;math/tex&quot;&gt;pk_{H_i}&lt;/script&gt;. If we have the coefficients of H, we can combine these
-and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p&gt;
+exponent, given as \(pk_{H_i}\). If we have the coefficients of H, we can combine these
+and create \(H(\tau)\).&lt;/p&gt;
 
 &lt;p&gt;More specifically:&lt;/p&gt;
 
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;H(z) = \sum{h_i \cdot z^i }&lt;/script&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;\(H(z) = \sum{h_i \cdot z^i }\)&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
@@ -270,7 +493,7 @@ and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;{pk}_{H_i} = \tau^i \cdot G_i&lt;/script&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;\({pk}_{H_i} = \tau^i \cdot G_i\)&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
@@ -283,12 +506,12 @@ and create &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt;.&lt;/p
 &lt;table class=&quot;centeredimg&quot;&gt;
   &lt;thead&gt;
     &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;script type=&quot;math/tex&quot;&gt;\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1&lt;/script&gt;&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;\(\sum{h_i \cdot {pk}_{H_i} } = \sum{h_i \cdot \tau^i \cdot G_1} = H(\tau) \cdot G_1\)&lt;/th&gt;
     &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
     &lt;tr&gt;
-      &lt;td style=&quot;text-align: center&quot;&gt;Evaluating &lt;script type=&quot;math/tex&quot;&gt;H(\tau)&lt;/script&gt; “in-the-exponent”&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Evaluating \(H(\tau)\) “in-the-exponent”&lt;/td&gt;
     &lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
@@ -305,7 +528,7 @@ was exposed during the setup process and is known to a malicious prover?&lt;/p&g
 &lt;p&gt;Apparently, it’s very easy to forge a proof — since the equality check for
 H=(A*B-C)/Z is done is at the specific point Tau, we can use our knowledge of
 Tau to create a polynomial which satisfies exactly that! That is, create a
-constant polynomial H(z), which just returns &lt;script type=&quot;math/tex&quot;&gt;(A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)&lt;/script&gt; all
+constant polynomial H(z), which just returns \((A(\tau) \cdot B(\tau)-C(\tau))/Z(\tau)\) all
 the time.&lt;/p&gt;
 
 &lt;p&gt;The verifier’s check will pass, and none’s the wiser!&lt;/p&gt;
@@ -501,7 +724,7 @@ leads to an easily executable attack.&lt;/p&gt;</content><author><name>Kobi</nam
 
 &lt;p&gt;We are also &lt;a href=&quot;https://qed-it.com/jobs/&quot;&gt;hiring&lt;/a&gt;!&lt;/p&gt;
 
-&lt;p&gt;I hope this has been enjoyable, and that it ignites the imagination as to what is now possible in a privacy preserving world!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.</summary></entry><entry><title type="html">Cryptocurrency recovery (or “What the BIP is all of this?”)</title><link href="/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html" rel="alternate" type="text/html" title="Cryptocurrency recovery (or &quot;What the BIP is all of this?&quot;)" /><published>2017-12-10T00:00:00+02:00</published><updated>2017-12-10T00:00:00+02:00</updated><id>/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this</id><content type="html" xml:base="/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html">&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
+&lt;p&gt;I hope this has been enjoyable, and that it ignites the imagination as to what is now possible in a privacy preserving world!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">At QED‐it, we have a mission to provide privacy preserving systems for the enterprise. For the last two years, we’ve worked on many projects, developing complex SNARK circuits and higher level protocols to tackle different use-cases - asset management, supply chain, real-time risk assessment, predictive maintenance, credit scoring and more. We are happy to present one such project that has been done in collaboration with Deloitte. The project has been in the works for the last few months, in which the team in Deloitte utilized the QED‐it SDK to deploy a Zero-Knowledge Blockchain for their chosen use-case — new french tax rules presented in 2018.</summary></entry><entry><title type="html">Cryptocurrency recovery (or “What the BIP is all of this?”)</title><link href="/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html" rel="alternate" type="text/html" title="Cryptocurrency recovery (or “What the BIP is all of this?”)" /><published>2017-12-10T00:00:00+02:00</published><updated>2017-12-10T00:00:00+02:00</updated><id>/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this</id><content type="html" xml:base="/2017/12/10/cryptocurrency-recovery-or-what-the-bip-is-all-of-this.html">&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
 &lt;h2 id=&quot;tl-dr&quot;&gt;TL; DR&lt;/h2&gt;
 &lt;h3 id=&quot;what-i-can-help-with&quot;&gt;What I can help with&lt;/h3&gt;
 &lt;ul&gt;
@@ -578,7 +801,7 @@ translates to
 &lt;p&gt;&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki&quot;&gt;BIP44&lt;/a&gt; uses BIP32 and describes a standard way to generate private keys such that you can use the same master private key for different cryptocurrencies or use-cases without risk.&lt;/p&gt;
 
 &lt;p&gt;That is, it standardizes the path that is used by BIP32:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;m / purpose' / coin_type' / account' / change / address_index
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;m / purpose' / coin_type' / account' / change / address_index
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;ul&gt;
@@ -678,16 +901,16 @@ translates to
 
 &lt;p&gt;Many of the messaging platforms support it - an incomplete list includes Facebook, WhatsApp and Telegram.&lt;/p&gt;
 
-&lt;p&gt;In order to have a preview for your web-site, you just need to add this prefix to the &lt;code class=&quot;highlighter-rouge&quot;&gt;html&lt;/code&gt; tag and these properties to your &lt;code class=&quot;highlighter-rouge&quot;&gt;head&lt;/code&gt; section:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;prefix=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og: http://ogp.me/ns#&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt; 
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:title&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:site_name&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:image&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:url&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;property=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;og:description&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;p&gt;In order to have a preview for your web-site, you just need to add this prefix to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;html&lt;/code&gt; tag and these properties to your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;head&lt;/code&gt; section:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;html prefix=&quot;og: http://ogp.me/ns#&quot;&amp;gt;
+    &amp;lt;head&amp;gt; 
+        &amp;lt;meta property=&quot;og:title&quot; content=&quot;&quot;&amp;gt;
+        &amp;lt;meta property=&quot;og:site_name&quot; content=&quot;&quot;&amp;gt;
+        &amp;lt;meta property=&quot;og:image&quot; content=&quot;&quot;&amp;gt;
+        &amp;lt;meta property=&quot;og:url&quot; content=&quot;&quot;&amp;gt;
+        &amp;lt;meta property=&quot;og:description&quot; content=&quot;&quot;&amp;gt;
+    &amp;lt;/head&amp;gt;
+&amp;lt;/html&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;That’s it. The hacker can now insert whatever code he wants, even a redirect to another web-site.&lt;/p&gt;
 
@@ -708,7 +931,7 @@ Good question. It’s always an interactive game - put a barrier, hackers get th
 
 &lt;p&gt;Facebook, for example, does a better job than the rest:&lt;/p&gt;
 &lt;ol&gt;
-  &lt;li&gt;If a URL is given in the &lt;code class=&quot;highlighter-rouge&quot;&gt;og:url&lt;/code&gt; tag, that one is eventually used to retrieve the others.&lt;/li&gt;
+  &lt;li&gt;If a URL is given in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;og:url&lt;/code&gt; tag, that one is eventually used to retrieve the others.&lt;/li&gt;
   &lt;li&gt;If a URL is not given or invalid, then the actual URL is displayed under the post.&lt;/li&gt;
 &lt;/ol&gt;
 
@@ -730,7 +953,7 @@ Link previews are nice and fun, but may also be used as a convenient tool to imp
 &lt;p&gt;Hopefully we can combine the easiness and convenience with security!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.</summary></entry><entry><title type="html">Mocking Ethereum contracts</title><link href="/2016/09/24/mocking-ethereum-contracts.html" rel="alternate" type="text/html" title="Mocking Ethereum contracts" /><published>2016-09-24T00:00:00+03:00</published><updated>2016-09-24T00:00:00+03:00</updated><id>/2016/09/24/mocking-ethereum-contracts</id><content type="html" xml:base="/2016/09/24/mocking-ethereum-contracts.html">&lt;p&gt;Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.&lt;/p&gt;
 
 &lt;p&gt;For node.js, for example, we have Mocha as a testing framework a Sinon.JS as a mocking framework. This is a code example that shows the usage of these two together:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
 var sinon = require('sinon');
                                                                                                                                                                                                                                                                                                                                                                            
 it(&quot;returns the return value from the original function&quot;, function () {
@@ -747,10 +970,10 @@ it(&quot;returns the return value from the original function&quot;, function () 
 });
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;In this example, you take a function, &lt;code class=&quot;highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt;, that usually returns &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;, and make it return &lt;code class=&quot;highlighter-rouge&quot;&gt;42&lt;/code&gt;. This is useful when you want to see how your code behaves when, for example, &lt;code class=&quot;highlighter-rouge&quot;&gt;result&lt;/code&gt; is larger than &lt;code class=&quot;highlighter-rouge&quot;&gt;30&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In this example, you take a function, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt;, that usually returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;, and make it return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;42&lt;/code&gt;. This is useful when you want to see how your code behaves when, for example, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;result&lt;/code&gt; is larger than &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;30&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;A more complex example would be:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
 var sinon = require('sinon');
                                                                                                                                                                                                                                                                                                                                                                            
 function once(fn) {
@@ -779,7 +1002,7 @@ it(&quot;returns the return value from the original function&quot;, function () 
 });
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;In this example, we don’t call &lt;code class=&quot;highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt; directly. Instead, &lt;code class=&quot;highlighter-rouge&quot;&gt;once&lt;/code&gt; calls it. So although we didn’t call it directly, the method was still mocked and returned &lt;code class=&quot;highlighter-rouge&quot;&gt;42&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In this example, we don’t call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt; directly. Instead, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;once&lt;/code&gt; calls it. So although we didn’t call it directly, the method was still mocked and returned &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;42&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h1 id=&quot;testing-in-ethereum&quot;&gt;Testing in Ethereum&lt;/h1&gt;
 &lt;p&gt;&lt;a href=&quot;https://live.ether.camp/&quot; target=&quot;_blank&quot;&gt;Ether.camp&lt;/a&gt; has been working on a pretty cool testing framework, utilizing the sandbox they developed for the excellent IDE, &lt;strong&gt;Ethereum Studio&lt;/strong&gt;. You can see examples of it &lt;a href=&quot;https://github.com/ether-camp/ethereum-testing-reference&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
@@ -805,7 +1028,7 @@ it(&quot;returns the return value from the original function&quot;, function () 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;A simple test case would be:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
 
 var Workbench = require('ethereum-sandbox-workbench');
 var workbench = new Workbench({
@@ -841,13 +1064,13 @@ workbench.startTesting('Math', function(contracts) {
   &lt;li&gt;Checks that addition actually works correctly in Ethereum. If you run this test case with Mocha, you’ll be sure to see it does!&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;You probably noticed that after calling &lt;code class=&quot;highlighter-rouge&quot;&gt;startTesting&lt;/code&gt; we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to &lt;a href=&quot;https://github.com/ConsenSys/ether-pudding&quot; target=&quot;_blank&quot;&gt;Ether Pudding&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;You probably noticed that after calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startTesting&lt;/code&gt; we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to &lt;a href=&quot;https://github.com/ConsenSys/ether-pudding&quot; target=&quot;_blank&quot;&gt;Ether Pudding&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h1 id=&quot;mocking-in-ethereum&quot;&gt;Mocking in Ethereum&lt;/h1&gt;
 &lt;p&gt;But what about mocking? When you’re testing Ethereum contracts, it’s more than a matter of modifying javascript functions. Ethereum contracts are pieces of code living on the Ethereum blockchain, accessible by sending transactions or calling their address.&lt;/p&gt;
 
 &lt;p&gt;For example, let’s look at the following contract:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
 
 contract GoldPriceChecker {
   function GoldPriceChecker(address goldPriceContractAddress) {
@@ -868,7 +1091,7 @@ contract GoldPriceChecker {
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;This contract checks the price of gold and returns a “happiness meter” depending on the price. It depends on a &lt;strong&gt;GoldPrice&lt;/strong&gt; contract, of which’s address is provided in our contract’s constructor. The interface of the &lt;strong&gt;GoldPrice&lt;/strong&gt; contract is:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {
   function GoldPrice(); 
   function price() constant returns(uint256); 
   function notifyCallback(); 
@@ -891,27 +1114,27 @@ contract GoldPriceChecker {
 &lt;p&gt;In order to understand how to create such a contract, we need to understand how transactions and calls in Ethereum work.&lt;/p&gt;
 
 &lt;h1 id=&quot;ethereum-contract-abi&quot;&gt;Ethereum Contract ABI&lt;/h1&gt;
-&lt;p&gt;Let’s say we want to call the Solidity function &lt;code class=&quot;highlighter-rouge&quot;&gt;getPriceWithParameter&lt;/code&gt; with the parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt;. According to the &lt;a href=&quot;https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI&quot; target=&quot;_blank&quot;&gt;Ethereum Contract ABI&lt;/a&gt;, we first calculate the Method ID: first 4 bytes of &lt;code class=&quot;highlighter-rouge&quot;&gt;sha3(&quot;getPriceWithParameter(uint256)&quot;)&lt;/code&gt;. In our case, it would be &lt;code class=&quot;highlighter-rouge&quot;&gt;0x60360e31&lt;/code&gt;. Then, we encode the parameters. In our case, it would be &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0000000000000000000000000000000000000000000000000000000000000005&lt;/code&gt;.  Then, we concatenate them.&lt;/p&gt;
+&lt;p&gt;Let’s say we want to call the Solidity function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;getPriceWithParameter&lt;/code&gt; with the parameter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;. According to the &lt;a href=&quot;https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI&quot; target=&quot;_blank&quot;&gt;Ethereum Contract ABI&lt;/a&gt;, we first calculate the Method ID: first 4 bytes of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sha3(&quot;getPriceWithParameter(uint256)&quot;)&lt;/code&gt;. In our case, it would be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x60360e31&lt;/code&gt;. Then, we encode the parameters. In our case, it would be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x0000000000000000000000000000000000000000000000000000000000000005&lt;/code&gt;.  Then, we concatenate them.&lt;/p&gt;
 
-&lt;p&gt;Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; called &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt; which was deployed at address &lt;code class=&quot;highlighter-rouge&quot;&gt;0xabcdefababcdefababcdefababcdefababcdefab&lt;/code&gt;, then calling the following:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;goldPrice.getPriceWithParaemeter(5, {
+&lt;p&gt;Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt; which was deployed at address &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xabcdefababcdefababcdefababcdefababcdefab&lt;/code&gt;, then calling the following:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;goldPrice.getPriceWithParaemeter(5, {
   from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
 });
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;is equivalent to:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;web3.eth.call({
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;web3.eth.call({
   from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826',
   to: '0xabcdefababcdefababcdefababcdefababcdefab',
   data: '0x60360e310000000000000000000000000000000000000000000000000000000000000005'
 });
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;In the Solidity code of the contract iself, it’s possible to access the &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; using the globally available &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;, which is of type &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt;, and the method ID using &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;, which is of type &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes4&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In the Solidity code of the contract iself, it’s possible to access the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;data&lt;/code&gt; using the globally available &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;, which is of type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt;, and the method ID using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;, which is of type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes4&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h1 id=&quot;proxy-contract&quot;&gt;Proxy contract&lt;/h1&gt;
 &lt;p&gt;Without further ado, I present you the Proxy contract:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract Proxy {
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract Proxy {
 
   bool _traceFunctionCalls = false;
   event Trace(address caller, bytes data, uint value);
@@ -970,40 +1193,40 @@ contract GoldPriceChecker {
 &lt;p&gt;As can be seen in the contract code, it has three functions:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setMock&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (&lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setMockWithArgs&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (&lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;Fallback function (&lt;code class=&quot;highlighter-rouge&quot;&gt;function () {}&lt;/code&gt;) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMockWithArgs&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;Fallback function (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;function () {}&lt;/code&gt;) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; of the resulting call will be an attempt to invoke the function of the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract on the proxy contract itself.&lt;/p&gt;
+&lt;p&gt;The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; of the resulting call will be an attempt to invoke the function of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract on the proxy contract itself.&lt;/p&gt;
 
-&lt;p&gt;Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked &lt;code class=&quot;highlighter-rouge&quot;&gt;setMock&lt;/code&gt; with the following arguments: &lt;code class=&quot;highlighter-rouge&quot;&gt;setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)&lt;/code&gt;. In other words, we’ve configured the proxy contract to return &lt;code class=&quot;highlighter-rouge&quot;&gt;5&lt;/code&gt; when called with a &lt;code class=&quot;highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt; of &lt;code class=&quot;highlighter-rouge&quot;&gt;0x6036e31&lt;/code&gt;. By pointing the Ether Pudding interface of &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the deployed proxy contract, the resulting object being &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt;, this is equivalent to calling &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPrice.getPriceWithParameter&lt;/code&gt; with any parameter.&lt;/p&gt;
+&lt;p&gt;Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock&lt;/code&gt; with the following arguments: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)&lt;/code&gt;. In other words, we’ve configured the proxy contract to return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt; when called with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt; of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x6036e31&lt;/code&gt;. By pointing the Ether Pudding interface of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the deployed proxy contract, the resulting object being &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt;, this is equivalent to calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice.getPriceWithParameter&lt;/code&gt; with any parameter.&lt;/p&gt;
 
 &lt;p&gt;Before I’ll show you how to use it in the mocking framework, I want to point you to the following part in the proxy contract:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bytes memory data = operation.data;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bytes memory data = operation.data;
 assembly {
   return(add(data, 32), mload(data))
 }
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., &lt;code class=&quot;highlighter-rouge&quot;&gt;uint256&lt;/code&gt;. By using inline assembly and the &lt;code class=&quot;highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode, we are able force the contract to return with the bytes saved when the mock was configured.&lt;/p&gt;
+&lt;p&gt;There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uint256&lt;/code&gt;. By using inline assembly and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode, we are able force the contract to return with the bytes saved when the mock was configured.&lt;/p&gt;
 
-&lt;p&gt;To understand how this works, we should look at how a &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt; variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.&lt;/p&gt;
+&lt;p&gt;To understand how this works, we should look at how a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt; variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.&lt;/p&gt;
 
 &lt;p&gt;The quoted code segment does the following:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;Copies &lt;code class=&quot;highlighter-rouge&quot;&gt;operation.data&lt;/code&gt; from storage to memory, by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;memory&lt;/code&gt; keyword. This is needed, because the &lt;code class=&quot;highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode returns from memory.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mload&lt;/code&gt; loads the first 32 bytes of the &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; variables. This would be the length of the array.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;add(data, 32)&lt;/code&gt; is the address of the actual data in the &lt;code class=&quot;highlighter-rouge&quot;&gt;bytes&lt;/code&gt; array.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;return(p,s)&lt;/code&gt; itself terminates the contract execution and returns &lt;code class=&quot;highlighter-rouge&quot;&gt;s&lt;/code&gt; bytes of data starting  in memory address &lt;code class=&quot;highlighter-rouge&quot;&gt;p&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Copies &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;operation.data&lt;/code&gt; from storage to memory, by using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;memory&lt;/code&gt; keyword. This is needed, because the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode returns from memory.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mload&lt;/code&gt; loads the first 32 bytes of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;data&lt;/code&gt; variables. This would be the length of the array.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;add(data, 32)&lt;/code&gt; is the address of the actual data in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt; array.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return(p,s)&lt;/code&gt; itself terminates the contract execution and returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;s&lt;/code&gt; bytes of data starting  in memory address &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;p&lt;/code&gt;.&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;To learn more about in-line assembly, check out the &lt;a href=&quot;https://solidity.readthedocs.io/en/latest/control-structures.html#inline-assembly&quot; target=&quot;_blank&quot;&gt;Solidity documentation&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h1 id=&quot;mocking-framework&quot;&gt;Mocking framework&lt;/h1&gt;
 &lt;p&gt;To make life easy, we added the mocking framework to the &lt;a href=&quot;https://github.com/ether-camp/ethereum-sandbox-workbench&quot; target=&quot;_blank&quot;&gt;ethereum-sandbox-workbench&lt;/a&gt;. This is an example of working with it:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
 var Workbench = require('ethereum-sandbox-workbench');
 
 var fromAddress = '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826';
@@ -1070,12 +1293,12 @@ workbench.startTesting(['GoldPrice', 'GoldPriceChecker'], function(contracts) {
 &lt;p&gt;Let’s recap what we see here:&lt;/p&gt;
 
 &lt;ol&gt;
-  &lt;li&gt;To deploy a proxy contract but have the interface of the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract, we deploy using &lt;code class=&quot;highlighter-rouge&quot;&gt;newMock&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;new&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;To set-up a new mock for a call return value, we use &lt;code class=&quot;highlighter-rouge&quot;&gt;mockCallReturnValue&lt;/code&gt; on the &lt;code class=&quot;highlighter-rouge&quot;&gt;price&lt;/code&gt; function.&lt;/li&gt;
-  &lt;li&gt;Then the &lt;code class=&quot;highlighter-rouge&quot;&gt;goldPriceChecker&lt;/code&gt; which calls the &lt;code class=&quot;highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract in its code sees the mocked value.&lt;/li&gt;
+  &lt;li&gt;To deploy a proxy contract but have the interface of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract, we deploy using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;newMock&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;new&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;To set-up a new mock for a call return value, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockCallReturnValue&lt;/code&gt; on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;price&lt;/code&gt; function.&lt;/li&gt;
+  &lt;li&gt;Then the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPriceChecker&lt;/code&gt; which calls the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract in its code sees the mocked value.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry><entry><title type="html">Additive Homomorphic Encryption on Ethereum</title><link href="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" rel="alternate" type="text/html" title="Additive Homomorphic Encryption on Ethereum" /><published>2016-04-10T00:00:00+03:00</published><updated>2016-04-10T00:00:00+03:00</updated><id>/2016/04/10/additive-homomorphic-encryption-on-ethereum</id><content type="html" xml:base="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html">&lt;p&gt;A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.&lt;/p&gt;
+&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry><entry><title type="html">Additive Homomorphic Encryption on Ethereum</title><link href="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" rel="alternate" type="text/html" title="Additive Homomorphic Encryption on Ethereum" /><published>2016-04-10T00:00:00+03:00</published><updated>2016-04-10T00:00:00+03:00</updated><id>/2016/04/10/additive-homomorphic-encryption-on-ethereum</id><content type="html" xml:base="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html">&lt;p&gt;A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.&lt;/p&gt;
 
 &lt;p&gt;OK, let’s be serious - private blockchains are in the exploration phase. Financial institutions, insurance firms and many others are finding out how they can use the technology, or at least some of its concepts. One way to look at them is as a specialized database for specific use-cases. Projects like &lt;a href=&quot;https://www.hyperledger.org/&quot; target=&quot;_blank&quot;&gt;HyperLedger&lt;/a&gt; and &lt;a href=&quot;http://r3cev.com/blog/2016/4/4/introducing-r3-corda-a-distributed-ledger-designed-for-financial-services&quot; target=&quot;_blank&quot;&gt;Corda&lt;/a&gt; build infrastructures that will power some use-cases.&lt;/p&gt;
 
@@ -1089,19 +1312,19 @@ One approach which I wanted to explore is homomorphic encryption. From &lt;a hre
 
 &lt;p&gt;For example, assuming \(ENC\) and \(DEC\) are our encryption and decryption functions respectively, we can have:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;x\_1=3, x\_2=4 \\\\ 
+\[x\_1=3, x\_2=4 \\\\ 
 c\_1 = ENC(x\_1), c\_2 = ENC(x\_2) \\\\
 c\_3 = F(c\_1, c\_2) \\\\
  \text{ such that} \\\\
-x\_3 = DEC(c\_3) = x\_1 + x\_2&lt;/script&gt;
+x\_3 = DEC(c\_3) = x\_1 + x\_2\]
 
 &lt;p&gt;By performing an operation on the encrypted \(x_1, x_2\) we got their sum.&lt;/p&gt;
 
 &lt;p&gt;The “holy grail” of homomorphic encryption is &lt;a href=&quot;https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption&quot; target=&quot;_blank&quot;&gt;Fully Homomorphic Encryption&lt;/a&gt;, with which you can get results of arbitrary computations on encrypted data, not just their sum or product. One cryptosystem which provides you with &lt;em&gt;additive&lt;/em&gt; homomorphic encryption is the &lt;a href=&quot;https://en.wikipedia.org/wiki/Paillier_cryptosystem&quot; target=&quot;_blank&quot;&gt;Paillier Cryptosystem&lt;/a&gt;. Additive here means that you can get the sum of two encrypted numbers.&lt;/p&gt;
 
 &lt;p&gt;The Paillier Cryptosystem is an asymmetric encryption scheme, meaning that you encrypt with your public key and decrypt with your private key. Leaving the key generation process aside, the parameters we need to use the cryptosystem are:
-&lt;script type=&quot;math/tex&quot;&gt;\\text{public key} = (n, g) \\\\
-\\text{private key} = (\lambda, \mu)&lt;/script&gt;
+\(\\text{public key} = (n, g) \\\\
+\\text{private key} = (\lambda, \mu)\)
 The specific meaning of the parameters is not needed for what I want to show, and they’re all the result of the key generation process.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Encryption process&lt;/strong&gt;:&lt;/p&gt;
@@ -1120,7 +1343,7 @@ The specific meaning of the parameters is not needed for what I want to show, an
 &lt;/ol&gt;
 
 &lt;p&gt;What we’re interested in now is the homomorphic addition property:
-&lt;script type=&quot;math/tex&quot;&gt;DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2&lt;/script&gt;&lt;/p&gt;
+\(DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2\)&lt;/p&gt;
 
 &lt;p&gt;#Homomorphic Encryption in Practice
 So what does that property give us? Let’s look at a specific use case. Let’s assume we have an Ethereum smart contract that manages the expenses of employees:&lt;/p&gt;
