@@ -1,4 +1,163 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-05-20T22:50:54+03:00</updated><id>/feed.xml</id><entry><title type="html">PLONK custom gates design considerations</title><link href="/2021/05/20/plonk-custom-gates.html" rel="alternate" type="text/html" title="PLONK custom gates design considerations" /><published>2021-05-20T00:00:00+03:00</published><updated>2021-05-20T00:00:00+03:00</updated><id>/2021/05/20/plonk-custom-gates</id><content type="html" xml:base="/2021/05/20/plonk-custom-gates.html">&lt;p&gt;Thanks to Zac Williamson and Kev for explaining ideas that helped form this document. Thanks to Han for spotting a mistake in “Approach 2” of the MiMC custom gate that could lead to breaking soundness.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-14T18:06:49+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+
+&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;Blockchain projects seek to reward community members who perform activities that are beneficial to the network.&lt;/p&gt;
+
+&lt;p&gt;For example, technical users participating in a test network for a project might get a few tokens in return for their participation. Another example includes users reteweeting a few tweets posted by the project.&lt;/p&gt;
+
+&lt;p&gt;This brings up a privacy problem. In contrast to normal pseudonymous transactions, these rewards usually require some form of Know Your Customer procedure, even if it’s just a twitter handle. From this, it follows that the project awarding the tokens, or in some cases anyone, can track the user’s activity after receiving the reward.&lt;/p&gt;
+
+&lt;p&gt;We can do better!&lt;/p&gt;
+
+&lt;p&gt;StarDrop allows users in a group to claim a reward allocated to them, without the network or the project learning a link between the claims and the users. It uses techniques adapted from &lt;a href=&quot;[https://privacypass.github.io/](https://privacypass.github.io/)&quot;&gt;Privacy Pass&lt;/a&gt; to build a Verifiable Oblivious Pseudo Random Function.&lt;/p&gt;
+
+&lt;p&gt;The result is a system allowing a project to blindly sign a token that the user can use to redeem a reward later. Moreover, it does so in an on-chain zkrollup, StarkNet, allowing to do this verifiable in scale in low cost, as is appropriate for rewards that are usually not large.&lt;/p&gt;
+
+&lt;p&gt;Disclaimer - I’ve created this project mostly to learn and experiment with StarkNet and should not be used in production!&lt;/p&gt;
+
+&lt;h1 id=&quot;privacy-pass&quot;&gt;Privacy Pass&lt;/h1&gt;
+
+&lt;p&gt;Let’s first describe a sketch of a simplified version of Privacy Pass that we’ll use to build our protocol. In general, Privacy Pass is a 2-party protocol allowing a user to create a blinded token, that a server will sign after performing their checks, and the user afterwards unblinding the signed token and being able to use it without the server learning which token belonged to which user. For a more in-depth description, check out &lt;a href=&quot;[https://kobi.one/2019/01/05/exploring-privacypass.html](https://kobi.one/2019/01/05/exploring-privacypass.html)&quot;&gt;my post about Privacy Pass&lt;/a&gt;.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;A user generates a token \(t\), which is a string of their choice.&lt;/li&gt;
+  &lt;li&gt;The user then hashes it to a curve \(H(t)\), resulting in an element of a specific elliptic curve.&lt;/li&gt;
+  &lt;li&gt;The user chooses a random blinding factor \(b\) and computes \(T=bH(t)\).&lt;/li&gt;
+  &lt;li&gt;The user then sends \(T\) to the server.&lt;/li&gt;
+  &lt;li&gt;The server uses their private key \(s\), having public key \(P=sG\) where \(G\) is a known generator of the curve, and sign the token, resulting in \(S=sT\). The server provides a proof that \(S\) and \(T\) have the same ratio as \(P\) and \(G\), proving that \(S\) is a valid signed token.&lt;/li&gt;
+  &lt;li&gt;The user verifiers the proof and then unblinds it using the inverse of their blinding factor, resulting in \(R=b^{-1}S=b^{-1}sT=b^{-1}sbH(t)=sH(t)\). Notice that this is still a signed token, just without the blinding factor.&lt;/li&gt;
+  &lt;li&gt;The user can then use the signed token \(R\) to redeem their reward. They do it by sending \(t\) and \(R\) to the server.&lt;/li&gt;
+  &lt;li&gt;The server then computes by itself \(sH(t)\), and checks if it equals to \(R\). If it does, it proves that the user possessed a signed token, as they could not have produced \(R\) from \(t\) by themselves.&lt;/li&gt;
+  &lt;li&gt;If successful, the server saves \(t\) as have been redeemed, so it could not be redeemed again.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Note that the original Privacy Pass construction uses an HMAC here, but this detail is not important in our case.&lt;/p&gt;
+
+&lt;h2 id=&quot;stardrops-adaptations&quot;&gt;StarDrop’s adaptations&lt;/h2&gt;
+
+&lt;p&gt;In our case, we’d like to allow users to claim their rewards on-chain, and so there isn’t a server we would claim the rewards against. There is only a smart contract. Therefore we have to adapt the protocol in step 7.&lt;/p&gt;
+
+&lt;p&gt;One immediate thought is to put the private key \(s\) in the contract. That doesn’t directly work, since if the key is in the contract then anyone can create their own signed tokens.&lt;/p&gt;
+
+&lt;p&gt;Building on that idea, we adapt the protocol to have three phases: commitment phase, key submission phase, redeem phase.&lt;/p&gt;
+
+&lt;p&gt;In the commitment phase, users submit their signed tokens \(R\). In the key submission phase, the server submits their key \(s\) to the contract. New tokens will not be accepted anymore. In the redeem phase, users can submit \(t\) and match it with an \(R\) submitted in the commitment phase. This prevents users from using the published key \(s\) to create new tokens.&lt;/p&gt;
+
+&lt;p&gt;There is another problem which we’ll need to handle - front-running. Since now redeeming is all done on-chain, a malicious actor can see the activity a user performs with the contract and front-run both the commitment and the redeem phases. A clever user may notice it, but maybe not. There’s an easy way to prevent it though. Make token \(t\) be a public key, to which the user holds the private key. Then, when redeeming, the contract will verify a signature by that public key. The only thing a front-runner can now do is denial-of-service, but they can’t steal a user’s token.&lt;/p&gt;
+
+&lt;p&gt;The protocol now looks as follows.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Initialize the contract with an operator and empty commitment mapping \(C\) and redeem mapping \(D\), and start with the commitment phase.&lt;/li&gt;
+  &lt;li&gt;Users send their signed tokens \(R\) from a public key \(u\). The contract saves in the commitment mapping \(C[u]=R\).&lt;/li&gt;
+  &lt;li&gt;The server then disables further sending of commitments, and moves to the key submission phase.&lt;/li&gt;
+  &lt;li&gt;The server then submits its key \(s\).&lt;/li&gt;
+  &lt;li&gt;The users now submit their tokens \(t\), of which the content is the public key \(u\), to the contract.&lt;/li&gt;
+  &lt;li&gt;The contract computes \(sH(t)\), checks a signature by \(u\) on the redeem transaction, and checks whether \(C[u]=sH(t)\).&lt;/li&gt;
+  &lt;li&gt;If successful, the contract transfers the reward to the user’s public key \(u\).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;starknet&quot;&gt;StarkNet&lt;/h1&gt;
+
+&lt;p&gt;Now that we have designed StarDrop for an on-chain smart contract, and as a consequence to a zkrollup, we can move on to implement it in StarkNet!&lt;/p&gt;
+
+&lt;p&gt;StarkNet is a zkrollup that allows writing smart contracts. This is in contrast to the original deployments of zkrollups that could perform only payments. In that manner, it is similar to zkSync aims to achieve.&lt;/p&gt;
+
+&lt;p&gt;StarkNet works in a model where there’s an operator that executes the contracts and creates a proof for them. The user just provides the input. StarkNet uses Cairo under the hood, which is a language that compiles down to VM bytecode a STARK proof can created about.&lt;/p&gt;
+
+&lt;p&gt;Cairo supports &lt;em&gt;hints&lt;/em&gt;, which are a way to provide precomputed inputs to a STARK to make the proof more efficient. These hints are computed using Python programs in Cairo. Running any Python code in StarkNet would then provide a denial-of-service vector against the operator, so StarkNet only allows specific methods to be used with hints, such as signature verification.&lt;/p&gt;
+
+&lt;p&gt;Moreover, Cairo is a high level language. There are operations that are significantly more efficient if implemented directly in the low-level AIR representation of the program. Therefore, Cairo uses a few “built ins”, such as for performing a range check.&lt;/p&gt;
+
+&lt;h1 id=&quot;implementation-of-stardrop-in-starknet&quot;&gt;Implementation of StarDrop in StarkNet&lt;/h1&gt;
+
+&lt;h2 id=&quot;hash-to-curve&quot;&gt;Hash to curve&lt;/h2&gt;
+
+&lt;p&gt;The hash \(H\) takes a string and outputs an element in the elliptic curve with an unknown discrete logarithm against other outputs of the hash. Ideally, it would behave as a good random oracle. Currently in StarkNet, the only hash efficiently available is a Pedersen hash, which does produce a point in the curve, but has algebraic properties that make it visibly different from a random oracle.&lt;/p&gt;
+
+&lt;p&gt;Looking at a simplified version of a Pedersen hash, where the hash of \(b_0b_1\) is \(b_0G_1+b_1G_2\), we can give an example. Given the the hashes of \(01\) and \(10\), we can compute the hash of \(11\) without calling the hash function. This is true since \(H(01) = G_2\) and \(H(10) = G_1\), and so \(H(11) = H(01) + H(10) = G_1+G_2\).&lt;/p&gt;
+
+&lt;p&gt;This would have to be improved before using this system securely.&lt;/p&gt;
+
+&lt;h2 id=&quot;scalar-multiplication&quot;&gt;Scalar multiplication&lt;/h2&gt;
+
+&lt;p&gt;Being limited to the type of code we can run, we soon stumble into a problem. Step 6 in our protocol requires us to perform a scalar multiplication, and we don’t have an efficient method to do it. Can we still do it? The answer is yes!&lt;/p&gt;
+
+&lt;p&gt;An easy way is to implement &lt;a href=&quot;[https://en.m.wikipedia.org/wiki/Elliptic_curve_point_multiplication](https://en.m.wikipedia.org/wiki/Elliptic_curve_point_multiplication)&quot;&gt;affine addition and doubling formulas&lt;/a&gt;. For those coming directly from the SNARK world, this would seem problematic - these formulas have exceptions and conditionals are needed unless you can avoid the exceptions. All the branches in a SNARK are always executed, which can become expensive. This is not as big of an issue in StarkNet, since it runs the Cairo VM, and so the programming model is similar to a CPU, where you only pay forthe branch that is actually executing.&lt;/p&gt;
+
+&lt;p&gt;An alternative exception-free approach would have been to implement &lt;a href=&quot;[https://eprint.iacr.org/2015/1060.pdf](https://eprint.iacr.org/2015/1060.pdf)&quot;&gt;complete addition and doubling formulas&lt;/a&gt;, but that would likely be more expensive since the number of multiplications needed is larger.&lt;/p&gt;
+
+&lt;p&gt;We’re still not done - in order to implement the “double and add” method, we need the binary representation of the key. Usually I would do it by providing the binary representation as a hint and checking that when summing it with the relevant powers of 2 we get the scalar. Since we can’t use arbitrary hints, we ask the user to provide these hints when claiming the drop. We then check the representation is correct and solely composed of bits. Alternatively, we could ask the operator to provide the representation when submitting their key.&lt;/p&gt;
+
+&lt;h2 id=&quot;contract-and-scripts&quot;&gt;Contract and scripts&lt;/h2&gt;
+
+&lt;p&gt;StarDrop is implemented as a StarkNet contract and a collection of Python scripts. The operation is quite manual at this point, but it’s fully functional. The implementation is available at https://github.com/kobigurk/stardrop.&lt;/p&gt;
+
+&lt;p&gt;The usual workflow looks like (including example invocations):&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The operator initializes the contract using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize&lt;/code&gt; function:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet invoke --address $${ADDR} --abi contract_abi.json --function initialize --inputs 3582577746677722431740023720320633876956623133930419590527228763639578535453 1000 2&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Users can now submit signed tokens to the contract. To obtain them, they use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[blind.py](http://blind.py)&lt;/code&gt; to create a blinded requests and send it to the operator off-chain. Then the operator uses &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sign_token.py&lt;/code&gt; and send the signed blinded token and correctness proofs to the user. The user then runs &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[unblind.py](http://unblind.py)&lt;/code&gt; to get the unblinded signed token and verify the correctness proofs. Finally, the user sends the commitment to the contract:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet invoke --address $${ADDR} --abi contract_abi.json --function commit --inputs 2042536649993117364296625103999908576248412199423456520000316129072735862954 3261967588085170658862293428587059222438269839015135942205506249609410833918 383622200922475827691447562161872358420401626548600386003465214370732507533 166731635083539346047790634754225714698968525453493336513299480525988223874&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The operator then ends the commitment phase using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;end_commitment_phase.py&lt;/code&gt; and uses the resulting signature:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet invoke --address $${ADDR} --abi contract_abi.json --function end_commitment_phase --inputs 1572514341211381639146744466808246693800547744347028176296700256447030933678 1978481093464076802357781694214950813691007442586456313662641217350746463161&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The operator submits the key to the contract using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;submit_key.py&lt;/code&gt; and uses the resulting signature:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet invoke --address $${ADDR} --abi contract_abi.json --function submit_key --inputs 284697472624386009295839589936418945178 3224560532100339074740113102065711825633396413956247303725126014773482991514 2291167198440858938698896566523731692215085667023695658054610128415429789324&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Users can now claim their rewards by providing their public key and hints about operator’s key and the token:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet invoke --address $${ADDR} --abi contract_abi.json --function claim_drop --inputs 2042536649993117364296625103999908576248412199423456520000316129072735862954 1409864911388159352029816777278381225970523230642148213329717159060539927901 0 1 0 1 1 0 0 1 0 0 0 1 1 1 1 0 0 1 0 1 1 0 0 0 1 1 1 0 0 0 1 0 0 1 1 0 1 1 0 0 0 1 1 0 0 0 0 0 0 1 1 0 0 1 0 1 1 0 1 1 1 1 0 1 1 0 1 0 1 0 1 0 0 1 0 0 1 1 1 0 0 1 0 1 0 1 1 0 1 1 1 1 1 1 1 0 1 1 1 1 1 0 0 0 1 0 1 1 1 1 0 1 0 1 1 1 0 1 0 0 0 1 1 0 1 0 1 1&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;At this point, the user’s balance has increased and the pool’s balance has decreased. This can be checked:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet call --address $${ADDR} --abi contract_abi.json --function get_balance --inputs 2042536649993117364296625103999908576248412199423456520000316129072735862954&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;starknet call --address $${ADDR} --abi contract_abi.json --function get_pool_balance&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;limitations&quot;&gt;Limitations&lt;/h2&gt;
+
+&lt;p&gt;StarkNet Planets, the currently deployed version of StarkNet, doesn’t support inter-contract communication in L2 or L1 ↔ L2 communication.&lt;/p&gt;
+
+&lt;p&gt;This means that currently the contract can only track balances that users have internally and not actually transfer token that user can use. The changes needed to make that happen once it does support those are small.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;StarkNet’s programmability opens up interesting application possibilities and provides a lot of flexibility as to what can be implemented. The CLI tooling is easy to use and the developers and users don’t have to maintain any heavy machinery to create proof or use it. Furthermore, the VS code extension adds useful syntax highlighting.&lt;/p&gt;
+
+&lt;p&gt;I did hit a few snags and additionally have some improvement suggestions:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I managed to kill StarkNet! When using the built in methods, their import order makes a difference, and crashed the StarkNet operator when specified in the wrong order, causing it to stop producing blocks. Kudos to the team that fixed it promptly, and now reject contracts that use the wrong import order.&lt;/li&gt;
+  &lt;li&gt;The testing workflow is hard. This is because there’s no way to run a StarkNet operator or a simulator of it locally, and so you have to wait for it to process your requests, which can take several minutes. That said, if there are exceptions and not just logic errors, the StarkNet operator reports them early and doesn’t wait for the actual execution.&lt;/li&gt;
+  &lt;li&gt;The Cairo syntax is sometimes overly verbose and sometimes overly implicit. For example, when using built ins, you have to explicitly specify whether a function uses it, but then they’re usually implicitly passed to underlying functions. This was also confusing to me when dealing with “revoked references”, having to localize the implicitly passed built ins to prevent that from happening, per Lior’s advice. In retrospect, it’s obvious 🙂&lt;/li&gt;
+  &lt;li&gt;Exceptions and asserts can occur at any time and it’s unclear whether an underlying function is safe to call with unchecked inputs. To be fair, this is a problem with most ZKP languages today.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Overall the experience was great, and I’m looking forward for the next versions!&lt;/p&gt;
+
+&lt;h1 id=&quot;acknowledgements&quot;&gt;Acknowledgements&lt;/h1&gt;
+
+&lt;p&gt;I thank Louis, Tom and Lior a lot for answering my questions when working on this experiment.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.</summary></entry><entry><title type="html">PLONK custom gates design considerations</title><link href="/2021/05/20/plonk-custom-gates.html" rel="alternate" type="text/html" title="PLONK custom gates design considerations" /><published>2021-05-20T00:00:00+03:00</published><updated>2021-05-20T00:00:00+03:00</updated><id>/2021/05/20/plonk-custom-gates</id><content type="html" xml:base="/2021/05/20/plonk-custom-gates.html">&lt;p&gt;Thanks to Zac Williamson and Kev for explaining ideas that helped form this document. Thanks to Han for spotting a mistake in “Approach 2” of the MiMC custom gate that could lead to breaking soundness.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
@@ -1402,68 +1561,4 @@ To summarize, this shows a method with which we can preserve privacy while still
 
 &lt;p&gt;What kind of businesses would use methods like this? Time will tell. This is the moment that companies can be creative and find out new ways to architect their systems to work in a more transparent and efficient world.&lt;/p&gt;
 
-&lt;p&gt;All in all, I feel there is a great potential in using this kind of methods and I would love to discuss ideas. Feel free to &lt;a href=&quot;/contact.html&quot;&gt;contact me&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.</summary></entry><entry><title type="html">Social engineering 101</title><link href="/2016/04/05/social-engineering-101.html" rel="alternate" type="text/html" title="Social engineering 101" /><published>2016-04-05T00:00:00+03:00</published><updated>2016-04-05T00:00:00+03:00</updated><id>/2016/04/05/social-engineering-101</id><content type="html" xml:base="/2016/04/05/social-engineering-101.html">&lt;p&gt;Last Thursday we had our demo day in Boost.VC tribe 7. Excitement, adrenaline and expectations are high - the meetings we’re going to have now, the connections that will assist us in building the companies we are dreaming of.&lt;/p&gt;
-
-&lt;p&gt;But there’s another side to that. This can be exploited. John, a fellow tribe member, says that “people are our greatest resource”. It’s also true that they’re our greatest weakness when it comes to security.&lt;/p&gt;
-
-&lt;p&gt;People are usually easier to manipulate than machines, because we don’t operate by a clear set of rules. We act more like a chaotic system, where one little detail can change entirely the way we behave. Especially when there are feelings involved.&lt;/p&gt;
-
-&lt;p&gt;It became especially clear to me when I noticed my co-founder sending an e-mail with our investor deck to a gmail account. Although in his case he was responsible, it could have been an entirely different situation. There’s no problem creating a gmail account that resembles a real one, by collecting some details from a linkedin account, for example.&lt;/p&gt;
-
-&lt;p&gt;So I set out to prove this point. The tools I used:&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;Domain bought for a few dollars, with free e-mail by zohomail.&lt;/li&gt;
-  &lt;li&gt;Social Engineering Toolkit.&lt;/li&gt;
-  &lt;li&gt;Some data gathering from linkedin.&lt;/li&gt;
-  &lt;li&gt;HTML5 template.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;First, I built a plausible story. It’s the first Monday since demo day, so it makes sense that an investor would follow up at this point of time. So I crafted the following e-mail:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Hello X,&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;I attended Boost VC’s demo day and was impressed by your presentation.
-We are looking invest in seed rounds of VR related companies.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Could we schedule a chat for next week?
-Meanwhile, I invite you to check out the details of the event we’re hosting next week, it would be great if you could come: &lt;a href=&quot;&quot;&gt;Register&lt;/a&gt;.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Best,&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Paul&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I made sure that Paul had a background story. When you google his name, you find out he’s an investor in VR companies. The e-mail also comes from a domain that makes sense. I could have done this part better, though, but more on this later.&lt;/p&gt;
-
-&lt;p&gt;With the Social Engineering Toolkit, I generated a page that looks exactly like g-mail’s login page, but instead forwards the login details to my server of choice:
-&lt;img src=&quot;/assets/images/se101-1.png&quot; alt=&quot;login&quot; style=&quot;width: 100%&quot; /&gt;
-This kind of makes sense, because you might need your gmail account to register to the event.&lt;/p&gt;
-
-&lt;p&gt;As it was just to prove a point, I didn’t capture the login details. After recording the e-mail address, The user was forwarded to the user to the following image:
-&lt;img src=&quot;/assets/images/se101-2.png&quot; alt=&quot;hack&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;The results of this were that everybody I sent this e-mail to clicked the link, but no one actually filled in the g-mail account details. I believe this part was my fault. 
-Some ways I could have done it better:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;Instead of collecting e-mail accounts, I could have used a known exploit in a PDF or Chrome. It wouldn’t work on everyone, but would be much more effective - everybody opened the link.&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;I could have also built the website for the company. One of the potential victims told me he did some research: he googled the guy, and that kind of made sense. But then he tried going to the VC website, which didn’t exist. He still wouldn’t put his details, because he “has been taught better”, but he had a point. To remedy that, I downloaded a free HTML5 template and edited it so it would look like a new VC website (I think it looks better than some VC websites I’ve seen…):
-&lt;img src=&quot;/assets/images/se101-3.png&quot; alt=&quot;VC&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;To summarize, in less than an hour, it’s possible to build a successful phishing attack - given that you can relate to the situation the other person is at.&lt;/p&gt;
-
-&lt;p&gt;Social engineering is dangerous. It happens all the time, and not only by computer hackers. We have to be wary of the e-mails we get, the links we click and, more generally, who we can trust.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Last Thursday we had our demo day in Boost.VC tribe 7. Excitement, adrenaline and expectations are high - the meetings we’re going to have now, the connections that will assist us in building the companies we are dreaming of.</summary></entry></feed>
+&lt;p&gt;All in all, I feel there is a great potential in using this kind of methods and I would love to discuss ideas. Feel free to &lt;a href=&quot;/contact.html&quot;&gt;contact me&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.</summary></entry></feed>
