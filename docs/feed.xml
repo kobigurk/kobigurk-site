@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:26:40+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:27:40+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
@@ -14,7 +14,7 @@
 
 &lt;p&gt;The result is a system allowing a project to blindly sign a token that the user can use to redeem a reward later. Moreover, it does so in an on-chain zkrollup, StarkNet, allowing to do this verifiable in scale in low cost, as is appropriate for rewards that are usually not large.&lt;/p&gt;
 
-&lt;p&gt;Disclaimer - I’ve created this project mostly to learn and experiment with StarkNet and should not be used in production!&lt;/p&gt;
+&lt;p&gt;Disclaimer - I’ve created this project mostly to learn and experiment with StarkNet and it should not be used in production!&lt;/p&gt;
 
 &lt;h1 id=&quot;privacy-pass&quot;&gt;Privacy Pass&lt;/h1&gt;
 
