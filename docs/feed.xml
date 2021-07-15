@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:27:40+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:42:23+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
@@ -92,7 +92,7 @@
 
 &lt;h2 id=&quot;contract-and-scripts&quot;&gt;Contract and scripts&lt;/h2&gt;
 
-&lt;p&gt;StarDrop is implemented as a StarkNet contract and a collection of Python scripts. The operation is quite manual at this point, but it’s fully functional. The implementation is available at https://github.com/kobigurk/stardrop.&lt;/p&gt;
+&lt;p&gt;StarDrop is implemented as a StarkNet contract and a collection of Python scripts. The operation is quite manual at this point, but it’s fully functional. The implementation &lt;a href=&quot;https://github.com/kobigurk/stardrop&quot; target=&quot;_blank&quot;&gt;is available on GitHub&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;The usual workflow looks like (including example invocations):&lt;/p&gt;
 
@@ -151,6 +151,7 @@
   &lt;li&gt;The testing workflow is hard. This is because there’s no way to run a StarkNet operator or a simulator of it locally, and so you have to wait for it to process your requests, which can take several minutes. That said, if there are exceptions and not just logic errors, the StarkNet operator reports them early and doesn’t wait for the actual execution.&lt;/li&gt;
   &lt;li&gt;The Cairo syntax is sometimes overly verbose and sometimes overly implicit. For example, when using built ins, you have to explicitly specify whether a function uses it, but then they’re usually implicitly passed to underlying functions. This was also confusing to me when dealing with “revoked references”, having to localize the implicitly passed built ins to prevent that from happening, per Lior’s advice.&lt;/li&gt;
   &lt;li&gt;Exceptions and asserts can occur at any time and it’s unclear whether an underlying function is safe to call with unchecked inputs. To be fair, this is a problem with most ZKP languages today.&lt;/li&gt;
+  &lt;li&gt;I haven’t put a lot of consideration to costs. Currently, StarkNet doesn’t charge you for transaction, and there will be fees in the future. It’s likely we’d want to move some of the heavier computation to be paid by the operator.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Overall the experience was great, and I’m looking forward for the next versions!&lt;/p&gt;
