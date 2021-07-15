@@ -92,7 +92,7 @@
 
 <p>We can do better!</p>
 
-<p>StarDrop allows users in a group to claim a reward allocated to them, without the network or the project learning a link between the claims and the users. It uses techniques adapted from <a href="[https://privacypass.github.io/](https://privacypass.github.io/)">Privacy Pass</a> to build a Verifiable Oblivious Pseudo Random Function.</p>
+<p>StarDrop allows users in a group to claim a reward allocated to them, without the network or the project learning a link between the claims and the users. It uses techniques adapted from <a href="https://privacypass.github.io/" target="_blank">Privacy Pass</a> to build a Verifiable Oblivious Pseudo Random Function.</p>
 
 <p>The result is a system allowing a project to blindly sign a token that the user can use to redeem a reward later. Moreover, it does so in an on-chain zkrollup, StarkNet, allowing to do this verifiable in scale in low cost, as is appropriate for rewards that are usually not large.</p>
 
@@ -100,7 +100,7 @@
 
 <h1 id="privacy-pass">Privacy Pass</h1>
 
-<p>Let’s first describe a sketch of a simplified version of Privacy Pass that we’ll use to build our protocol. In general, Privacy Pass is a 2-party protocol allowing a user to create a blinded token, that a server will sign after performing their checks, and the user afterwards unblinding the signed token and being able to use it without the server learning which token belonged to which user. For a more in-depth description, check out <a href="[https://kobi.one/2019/01/05/exploring-privacypass.html](https://kobi.one/2019/01/05/exploring-privacypass.html)">my post about Privacy Pass</a>.</p>
+<p>Let’s first describe a sketch of a simplified version of Privacy Pass that we’ll use to build our protocol. In general, Privacy Pass is a 2-party protocol allowing a user to create a blinded token, that a server will sign after performing their checks, and the user afterwards unblinding the signed token and being able to use it without the server learning which token belonged to which user. For a more in-depth description, check out <a href="https://kobi.one/2019/01/05/exploring-privacypass.html" target="_blank">my post about Privacy Pass</a>.</p>
 
 <ol>
   <li>A user generates a token \(t\), which is a string of their choice.</li>
@@ -166,9 +166,9 @@
 
 <p>Being limited to the type of code we can run, we soon stumble into a problem. Step 6 in our protocol requires us to perform a scalar multiplication, and we don’t have an efficient method to do it. Can we still do it? The answer is yes!</p>
 
-<p>An easy way is to implement <a href="[https://en.m.wikipedia.org/wiki/Elliptic_curve_point_multiplication](https://en.m.wikipedia.org/wiki/Elliptic_curve_point_multiplication)">affine addition and doubling formulas</a>. For those coming directly from the SNARK world, this would seem problematic - these formulas have exceptions and conditionals are needed unless you can avoid the exceptions. All the branches in a SNARK are always executed, which can become expensive. This is not as big of an issue in StarkNet, since it runs the Cairo VM, and so the programming model is similar to a CPU, where you only pay forthe branch that is actually executing.</p>
+<p>An easy way is to implement <a href="https://en.m.wikipedia.org/wiki/Elliptic_curve_point_multiplication" target="_blank">affine addition and doubling formulas</a>. For those coming directly from the SNARK world, this would seem problematic - these formulas have exceptions and conditionals are needed unless you can avoid the exceptions. All the branches in a SNARK are always executed, which can become expensive. This is not as big of an issue in StarkNet, since it runs the Cairo VM, and so the programming model is similar to a CPU, where you only pay forthe branch that is actually executing.</p>
 
-<p>An alternative exception-free approach would have been to implement <a href="[https://eprint.iacr.org/2015/1060.pdf](https://eprint.iacr.org/2015/1060.pdf)">complete addition and doubling formulas</a>, but that would likely be more expensive since the number of multiplications needed is larger.</p>
+<p>An alternative exception-free approach would have been to implement <a href="https://eprint.iacr.org/2015/1060.pdf" target="_blank">complete addition and doubling formulas</a>, but that would likely be more expensive since the number of multiplications needed is larger.</p>
 
 <p>We’re still not done - in order to implement the “double and add” method, we need the binary representation of the key. Usually I would do it by providing the binary representation as a hint and checking that when summing it with the relevant powers of 2 we get the scalar. Since we can’t use arbitrary hints, we ask the user to provide these hints when claiming the drop. We then check the representation is correct and solely composed of bits. Alternatively, we could ask the operator to provide the representation when submitting their key.</p>
 
@@ -185,7 +185,7 @@
 <p><code class="language-plaintext highlighter-rouge">starknet invoke --address $${ADDR} --abi contract_abi.json --function initialize --inputs 3582577746677722431740023720320633876956623133930419590527228763639578535453 1000 2</code></p>
 
 <ul>
-  <li>Users can now submit signed tokens to the contract. To obtain them, they use <code class="language-plaintext highlighter-rouge">[blind.py](http://blind.py)</code> to create a blinded requests and send it to the operator off-chain. Then the operator uses <code class="language-plaintext highlighter-rouge">sign_token.py</code> and send the signed blinded token and correctness proofs to the user. The user then runs <code class="language-plaintext highlighter-rouge">[unblind.py](http://unblind.py)</code> to get the unblinded signed token and verify the correctness proofs. Finally, the user sends the commitment to the contract:</li>
+  <li>Users can now submit signed tokens to the contract. To obtain them, they use <code class="language-plaintext highlighter-rouge">blind.py</code> to create a blinded requests and send it to the operator off-chain. Then the operator uses <code class="language-plaintext highlighter-rouge">sign_token.py</code> and send the signed blinded token and correctness proofs to the user. The user then runs <code class="language-plaintext highlighter-rouge">unblind.py</code> to get the unblinded signed token and verify the correctness proofs. Finally, the user sends the commitment to the contract:</li>
 </ul>
 
 <p><code class="language-plaintext highlighter-rouge">starknet invoke --address $${ADDR} --abi contract_abi.json --function commit --inputs 2042536649993117364296625103999908576248412199423456520000316129072735862954 3261967588085170658862293428587059222438269839015135942205506249609410833918 383622200922475827691447562161872358420401626548600386003465214370732507533 166731635083539346047790634754225714698968525453493336513299480525988223874</code></p>
