@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-14T18:06:49+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:15:57+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
@@ -136,7 +136,7 @@
 
 &lt;h2 id=&quot;limitations&quot;&gt;Limitations&lt;/h2&gt;
 
-&lt;p&gt;StarkNet Planets, the currently deployed version of StarkNet, doesn’t support inter-contract communication in L2 or L1 ↔ L2 communication.&lt;/p&gt;
+&lt;p&gt;StarkNet Planets, the currently deployed version of StarkNet, is already an expressive zkrollup and fits a lot of our needs, it has a few limitations. An important one is that it doesn’t support inter-contract communication in L2 or L1 ↔ L2 communication.&lt;/p&gt;
 
 &lt;p&gt;This means that currently the contract can only track balances that users have internally and not actually transfer token that user can use. The changes needed to make that happen once it does support those are small.&lt;/p&gt;
 
@@ -147,9 +147,9 @@
 &lt;p&gt;I did hit a few snags and additionally have some improvement suggestions:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;I managed to kill StarkNet! When using the built in methods, their import order makes a difference, and crashed the StarkNet operator when specified in the wrong order, causing it to stop producing blocks. Kudos to the team that fixed it promptly, and now reject contracts that use the wrong import order.&lt;/li&gt;
+  &lt;li&gt;I managed to kill StarkNet testnet deployment! When using the built in methods, their import order makes a difference, and crashed the StarkNet operator when specified in the wrong order, causing it to stop producing blocks. Kudos to the team that fixed it promptly, and now reject contracts that use the wrong import order. This is reasonable for software in such an early stage and that’s what testnets are for 🙂&lt;/li&gt;
   &lt;li&gt;The testing workflow is hard. This is because there’s no way to run a StarkNet operator or a simulator of it locally, and so you have to wait for it to process your requests, which can take several minutes. That said, if there are exceptions and not just logic errors, the StarkNet operator reports them early and doesn’t wait for the actual execution.&lt;/li&gt;
-  &lt;li&gt;The Cairo syntax is sometimes overly verbose and sometimes overly implicit. For example, when using built ins, you have to explicitly specify whether a function uses it, but then they’re usually implicitly passed to underlying functions. This was also confusing to me when dealing with “revoked references”, having to localize the implicitly passed built ins to prevent that from happening, per Lior’s advice. In retrospect, it’s obvious 🙂&lt;/li&gt;
+  &lt;li&gt;The Cairo syntax is sometimes overly verbose and sometimes overly implicit. For example, when using built ins, you have to explicitly specify whether a function uses it, but then they’re usually implicitly passed to underlying functions. This was also confusing to me when dealing with “revoked references”, having to localize the implicitly passed built ins to prevent that from happening, per Lior’s advice.&lt;/li&gt;
   &lt;li&gt;Exceptions and asserts can occur at any time and it’s unclear whether an underlying function is safe to call with unchecked inputs. To be fair, this is a problem with most ZKP languages today.&lt;/li&gt;
 &lt;/ul&gt;
 
