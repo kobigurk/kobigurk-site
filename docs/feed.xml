@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-08-22T18:24:25+03:00</updated><id>/feed.xml</id><entry><title type="html">Cross platform Go modules for giants</title><link href="/2021/08/22/cross-platform-go-modules-for-giants.html" rel="alternate" type="text/html" title="Cross platform Go modules for giants" /><published>2021-08-22T00:00:00+03:00</published><updated>2021-08-22T00:00:00+03:00</updated><id>/2021/08/22/cross-platform-go-modules-for-giants</id><content type="html" xml:base="/2021/08/22/cross-platform-go-modules-for-giants.html">&lt;p&gt;When your Go modules become too large.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-08-22T18:30:55+03:00</updated><id>/feed.xml</id><entry><title type="html">Cross platform Go modules for giants</title><link href="/2021/08/22/cross-platform-go-modules-for-giants.html" rel="alternate" type="text/html" title="Cross platform Go modules for giants" /><published>2021-08-22T00:00:00+03:00</published><updated>2021-08-22T00:00:00+03:00</updated><id>/2021/08/22/cross-platform-go-modules-for-giants</id><content type="html" xml:base="/2021/08/22/cross-platform-go-modules-for-giants.html">&lt;p&gt;When your Go modules become too large.&lt;/p&gt;
 
 &lt;h1 id=&quot;tldr&quot;&gt;Tl;dr&lt;/h1&gt;
 
@@ -145,7 +145,11 @@ import &quot;C&quot;&lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;I imagine there’s a bunch of ways it could improved. One example is that we could use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;parser&lt;/code&gt; package to automatically derive the router rather than manually writing it.&lt;/p&gt;
 
-&lt;p&gt;I’d love to hear feedback and improvement suggestions!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">When your Go modules become too large.</summary></entry><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+&lt;p&gt;I’d love to hear feedback and improvement suggestions!&lt;/p&gt;
+
+&lt;h2 id=&quot;acknowledgements&quot;&gt;Acknowledgements&lt;/h2&gt;
+
+&lt;p&gt;Thanks to Michael and George for reviewing.&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">When your Go modules become too large.</summary></entry><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
