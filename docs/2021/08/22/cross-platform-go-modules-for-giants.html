@@ -1,0 +1,290 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Cross platform Go modules for giants</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+		<link rel="stylesheet" href="/assets/css/side-menu.css">
+		<link rel="stylesheet" href="/assets/css/styles.css">
+    <link type="application/atom+xml" rel="alternate" href="/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Cross platform Go modules for giants</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Cross platform Go modules for giants" />
+<meta name="author" content="Kobi" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="When your Go modules become too large." />
+<meta property="og:description" content="When your Go modules become too large." />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-08-22T00:00:00+03:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Cross platform Go modules for giants" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","url":"/2021/08/22/cross-platform-go-modules-for-giants.html","author":{"@type":"Person","name":"Kobi"},"headline":"Cross platform Go modules for giants","dateModified":"2021-08-22T00:00:00+03:00","datePublished":"2021-08-22T00:00:00+03:00","description":"When your Go modules become too large.","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/08/22/cross-platform-go-modules-for-giants.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+				href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/styles/default.min.css">
+    <link  href="/assets/css/prism.css"  rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="layout">
+			<a href="#menu" id="menuLink" class="menu-link"><span></span></a>
+
+<div id="menu">
+	<div class="pure-menu">
+		<a class="pure-menu-heading" href="#">Kobi Gurkan</a>
+		<ul class="pure-menu-list">
+			
+			<li class="pure-menu-item">
+        <a href="/" class="pure-menu-link" ">Home</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/blog.html" class="pure-menu-link" ">Blog</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/projects.html" class="pure-menu-link" ">Projects</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/presentations.html" class="pure-menu-link" ">Presentations</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/contact.html" class="pure-menu-link" ">Contact</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="/pgp.html" class="pure-menu-link" ">PGP key</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://github.com/kobigurk" class="pure-menu-link" target="_blank"">GitHub</a>
+			</li>
+			
+			<li class="pure-menu-item">
+        <a href="https://twitter.com/kobigurk" class="pure-menu-link" target="_blank"">Twitter</a>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+
+			<div id="main">
+				<div class="header">
+					<h3>Cross platform Go modules for giants</h3>
+				</div>
+				<div class="content">
+					<p>22 Aug 2021 - Kobi</p>
+
+<p>When your Go modules become too large.</p>
+
+<h1 id="tldr">Tl;dr</h1>
+
+<p>What can you do when your Go module becomes too large for the Go tools to handle?!</p>
+
+<p>When you see this?</p>
+
+<pre><code class="language-go">module source tree too large (max size is 524288000 bytes)</code></pre>
+
+<h1 id="introduction">Introduction</h1>
+
+<p>Go modules are a convenient to share code. You define a module with its version in go.mod and to Go tools automatically take care of downloading the right version, checking its integrity and compiling it.</p>
+
+<p>CGo enables integrating non-Go code by either allowing you to compile C code or just link to external libraries and call functions exported there through a convenient interface.</p>
+
+<p>Let’s say you have an externally compiled library that you want to distribute with your Go module but still use the usual Go tools. Adding a compilation step can’t happen, since that would require invoking, and perhaps installing, external tools, which the Go tools doesn’t support.</p>
+
+<p>The solution is to commit your library as part of the Go module codebase, which gets downloaded together with the rest of the source code.</p>
+
+<p>Now, let’s say you want to support multiple platforms. Fortunately, Go has built in capabilities to include source files based on the platform compiling, so we can:</p>
+
+<ul>
+  <li>Compile the library for each target platform</li>
+  <li>Create a platform-dependent source file that links to the right library</li>
+</ul>
+
+<p>This works reasonably well, with the caveat that the Go module the tools need to download becomes larger as a result.</p>
+
+<p>What happens when the library become too large? When it’s a static library that didn’t optimize for size and relied on consumers just taking what they need, which the Go tools do? This is what you see if your Go module is too large:</p>
+
+<pre><code class="language-go">module source tree too large (max size is 524288000 bytes)</code></pre>
+
+<p>Concretely, if you want to support Linux, macOS, Windows on x86_64, ARMv7, ARMv8 and s390x, where applicable, that becomes a big set of libraries that can exceed 500mb.</p>
+
+<p>Why is that important? Because the maximum module size Go supports is 500mb. This is intentional to prevent denial-of-service attacks, as mentioned in <a href="https://golang.org/ref/mod#zip-path-size-constraints">https://golang.org/ref/mod#zip-path-size-constraints</a>.</p>
+
+<p>Can we have still use the usual Go workflow and support that many platforms? The answer is yes!</p>
+
+<p>We first provide an overview of the workflow when the module size is less than 500mb, and then we’ll see how to make it work with the the giant libraries case. We’ll use as a study case the <a href="https://github.com/celo-org/celo-bls-go">celo-bls-go</a> library, which is a Go module that links to an underlying Rust library.</p>
+
+<h1 id="not-too-big">Not too big</h1>
+
+<p>When your library is big, but not too big, you can employ a relatively simple structure. Assuming our Go package is <code class="language-plaintext highlighter-rouge">bls</code>, we can employ the following structure:</p>
+
+<ul>
+  <li>Main code file, <code class="language-plaintext highlighter-rouge">bls.go</code>, that contains the invocations of the different functions from the underlying library using CGo. This comes together with a header file <code class="language-plaintext highlighter-rouge">bls.h</code> that describes the imported functions. For example:</li>
+</ul>
+
+<pre><code class="language-go">func GeneratePrivateKey() (*PrivateKey, error) {
+	privateKey := &amp;PrivateKey{}
+	success := C.generate_private_key(&amp;privateKey.ptr)
+	if !success {
+		return nil, GeneralError
+	}
+
+	return privateKey, nil
+}</code></pre>
+
+<ul>
+  <li>Per-platform file that only describes the linking directives, and has a build directive causing it to be compiled only if targeting this platform. For example, <code class="language-plaintext highlighter-rouge">bls_darwin64.go</code>:</li>
+</ul>
+
+<pre><code class="language-go">// +build darwin,amd64,!ios
+
+package bls
+
+/*
+#cgo LDFLAGS: -L${SRCDIR}/../libs/x86_64-apple-darwin -lbls_snark_sys -ldl -lm
+*/
+import "C"</code></pre>
+
+<p>Not too bad!</p>
+
+<h1 id="is-it-all-doomed">Is it all doomed?</h1>
+
+<p>The solution described in the previous section has worked for us for quite a while, until very recently when our underlying Rust library grew bigger and we wanted to support more platforms, such as the recent M1, 32-bit ARM and s390x.</p>
+
+<p>We realized that it’s a harder case quickly. Remember, our goal is to still be able to keep using the usual Go tools.</p>
+
+<p>Some solutions that we’ve tried and and failed or we rejected include:</p>
+
+<ul>
+  <li>Downloading the library on demand per-platform. Go didn’t seem to provide a way to do it.</li>
+  <li>See if there’s a way to remove the 500mb module size limit. We didn’t find a way with the usual Go tools, since it’s enforced on the client side.</li>
+  <li>Reducing the library size. It’s possible, but not a long-term or scalable solution.</li>
+  <li>Have users install the library through other means, such as <code class="language-plaintext highlighter-rouge">apt</code>, like other common libraries like <code class="language-plaintext highlighter-rouge">openssl</code>do. Possible, but significantly worse developer and user experience for our specific library.</li>
+  <li>Require developers who consumed the module go through a custom vendoring process. We didn’t even test this.</li>
+</ul>
+
+<p>So… now what?</p>
+
+<h1 id="big-friendly-giant">Big friendly giant</h1>
+
+<p>Having realized it’s not going to be an officially-described method or something that is widely employed, we embarked on creating our own.</p>
+
+<p>Since our problem is with the library size when distributing all platforms, we first handled that:</p>
+
+<ul>
+  <li>Distribute the per-platform libraries to packages, such as <code class="language-plaintext highlighter-rouge">celo-bls-go-linux</code>, <code class="language-plaintext highlighter-rouge">celo-bls-go-macos</code>, etc</li>
+  <li>In each package, have a similar structure as described previously. Namely, a main source file and a per-platform source file that has the linking and build directives. This is only for the platforms supported in this package.</li>
+</ul>
+
+<p>This is still not seamless to consumers, since they would have to choose which <code class="language-plaintext highlighter-rouge">celo-bls-go-PACKAGE</code> to choose, depending on their platform.</p>
+
+<p>We then introduce a main module, <code class="language-plaintext highlighter-rouge">celo-bls-go</code>, that has a <code class="language-plaintext highlighter-rouge">router</code> per package called <code class="language-plaintext highlighter-rouge">bls_PACKAGE.go</code>:</p>
+
+<ul>
+  <li>It has an appropriate build directive, which is the union of the build directives of the platforms included in the package.</li>
+  <li>It imports the correct package, <code class="language-plaintext highlighter-rouge">celo-bls-go-PACKAGE</code>.</li>
+  <li>It has wrapper functions for all public functions, consts and vars in the package. For example:</li>
+</ul>
+
+<pre><code class="language-go">func HashDirectFirstStep(message []byte, hashBytes int32) ([]byte, error) {
+    return blsRoute.HashDirectFirstStep(message, hashBytes)
+}</code></pre>
+
+<p>To ease in creating this structure, that unfortunately includes a lot of similar code, we then introduced the <code class="language-plaintext highlighter-rouge">distribute</code>program that consumes source templates, router templates and a <code class="language-plaintext highlighter-rouge">platforms.json</code> and produces the per-package files. The <code class="language-plaintext highlighter-rouge">platforms.json</code> file looks like this:</p>
+
+<pre><code class="language-go">{
+	"linux": [{
+		"name": "linux_arm64",
+		"buildDirective": "linux,arm64",
+		"linkageDirective": "-L${SRCDIR}/../libs/aarch64-unknown-linux-gnu -lbls_snark_sys -ldl -lm",
+		"libDirectories": ["aarch64-unknown-linux-gnu"]
+	}, ...
+  ],
+  "macos": [{
+		"name": "darwin64",
+		"buildDirective": "darwin,amd64,!ios",
+		"linkageDirective": "-L${SRCDIR}/../libs/x86_64-apple-darwin -lbls_snark_sys -ldl -lm",
+		"libDirectories": ["x86_64-apple-darwin"]
+	}, ...
+  ],
+  ...
+}</code></pre>
+
+<p>The code for <code class="language-plaintext highlighter-rouge">distribute.go</code>can be viewed here: <a href="https://github.com/celo-org/celo-bls-go/blob/c0f37c3a9a6cfb448a152f785391efd42f03f895/cmd/distribute/distribute.go">https://github.com/celo-org/celo-bls-go/blob/c0f37c3a9a6cfb448a152f785391efd42f03f895/cmd/distribute/distribute.go</a></p>
+
+<p>This is it!</p>
+
+<h2 id="final-thoughts">Final thoughts</h2>
+
+<p>The solution we described works reasonably well and achieves what we set out to achieve.</p>
+
+<p>I imagine there’s a bunch of ways it could improved. One example is that we could use the <code class="language-plaintext highlighter-rouge">parser</code> package to automatically derive the router rather than manually writing it.</p>
+
+<p>I’d love to hear feedback and improvement suggestions!</p>
+
+
+
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kobigurk.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                                                       
+
+
+				</div>
+			</div>
+    </div>
+		<script type="text/javascript" src="/assets/js/ui.js"></script>
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=UA-76031640-1"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-76031640-1');
+      </script>
+		
+    <script type="text/javascript" src="/assets/MathJax-2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.13.1/highlight.min.js"></script>
+		<script src="/assets/js/solidity.js"></script>
+    <script type="text/javascript">
+      hljs.registerLanguage('solidity', window.hljsDefineSolidity);
+      hljs.initHighlightingOnLoad();
+    </script>
+    <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="89b86248-82d0-4a4a-8fd3-59a0088b1ffa";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+    <script
+      type="text/javascript"
+      src="/assets/js/prism.js"></script>
+    <script
+      type="text/javascript"
+      src="//cdnjs.cloudflare.com/ajax/libs/prism/1.6.0/components/prism-js.min.js">
+    </script>
+  </body>
+</html>

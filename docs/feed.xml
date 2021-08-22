@@ -1,4 +1,151 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-07-15T18:42:23+03:00</updated><id>/feed.xml</id><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-08-22T18:24:25+03:00</updated><id>/feed.xml</id><entry><title type="html">Cross platform Go modules for giants</title><link href="/2021/08/22/cross-platform-go-modules-for-giants.html" rel="alternate" type="text/html" title="Cross platform Go modules for giants" /><published>2021-08-22T00:00:00+03:00</published><updated>2021-08-22T00:00:00+03:00</updated><id>/2021/08/22/cross-platform-go-modules-for-giants</id><content type="html" xml:base="/2021/08/22/cross-platform-go-modules-for-giants.html">&lt;p&gt;When your Go modules become too large.&lt;/p&gt;
+
+&lt;h1 id=&quot;tldr&quot;&gt;Tl;dr&lt;/h1&gt;
+
+&lt;p&gt;What can you do when your Go module becomes too large for the Go tools to handle?!&lt;/p&gt;
+
+&lt;p&gt;When you see this?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;module source tree too large (max size is 524288000 bytes)&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;Go modules are a convenient to share code. You define a module with its version in go.mod and to Go tools automatically take care of downloading the right version, checking its integrity and compiling it.&lt;/p&gt;
+
+&lt;p&gt;CGo enables integrating non-Go code by either allowing you to compile C code or just link to external libraries and call functions exported there through a convenient interface.&lt;/p&gt;
+
+&lt;p&gt;Let’s say you have an externally compiled library that you want to distribute with your Go module but still use the usual Go tools. Adding a compilation step can’t happen, since that would require invoking, and perhaps installing, external tools, which the Go tools doesn’t support.&lt;/p&gt;
+
+&lt;p&gt;The solution is to commit your library as part of the Go module codebase, which gets downloaded together with the rest of the source code.&lt;/p&gt;
+
+&lt;p&gt;Now, let’s say you want to support multiple platforms. Fortunately, Go has built in capabilities to include source files based on the platform compiling, so we can:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Compile the library for each target platform&lt;/li&gt;
+  &lt;li&gt;Create a platform-dependent source file that links to the right library&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This works reasonably well, with the caveat that the Go module the tools need to download becomes larger as a result.&lt;/p&gt;
+
+&lt;p&gt;What happens when the library become too large? When it’s a static library that didn’t optimize for size and relied on consumers just taking what they need, which the Go tools do? This is what you see if your Go module is too large:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;module source tree too large (max size is 524288000 bytes)&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Concretely, if you want to support Linux, macOS, Windows on x86_64, ARMv7, ARMv8 and s390x, where applicable, that becomes a big set of libraries that can exceed 500mb.&lt;/p&gt;
+
+&lt;p&gt;Why is that important? Because the maximum module size Go supports is 500mb. This is intentional to prevent denial-of-service attacks, as mentioned in &lt;a href=&quot;https://golang.org/ref/mod#zip-path-size-constraints&quot;&gt;https://golang.org/ref/mod#zip-path-size-constraints&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Can we have still use the usual Go workflow and support that many platforms? The answer is yes!&lt;/p&gt;
+
+&lt;p&gt;We first provide an overview of the workflow when the module size is less than 500mb, and then we’ll see how to make it work with the the giant libraries case. We’ll use as a study case the &lt;a href=&quot;https://github.com/celo-org/celo-bls-go&quot;&gt;celo-bls-go&lt;/a&gt; library, which is a Go module that links to an underlying Rust library.&lt;/p&gt;
+
+&lt;h1 id=&quot;not-too-big&quot;&gt;Not too big&lt;/h1&gt;
+
+&lt;p&gt;When your library is big, but not too big, you can employ a relatively simple structure. Assuming our Go package is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bls&lt;/code&gt;, we can employ the following structure:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Main code file, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bls.go&lt;/code&gt;, that contains the invocations of the different functions from the underlying library using CGo. This comes together with a header file &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bls.h&lt;/code&gt; that describes the imported functions. For example:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;func GeneratePrivateKey() (*PrivateKey, error) {
+	privateKey := &amp;amp;PrivateKey{}
+	success := C.generate_private_key(&amp;amp;privateKey.ptr)
+	if !success {
+		return nil, GeneralError
+	}
+
+	return privateKey, nil
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Per-platform file that only describes the linking directives, and has a build directive causing it to be compiled only if targeting this platform. For example, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bls_darwin64.go&lt;/code&gt;:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;// +build darwin,amd64,!ios
+
+package bls
+
+/*
+#cgo LDFLAGS: -L${SRCDIR}/../libs/x86_64-apple-darwin -lbls_snark_sys -ldl -lm
+*/
+import &quot;C&quot;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Not too bad!&lt;/p&gt;
+
+&lt;h1 id=&quot;is-it-all-doomed&quot;&gt;Is it all doomed?&lt;/h1&gt;
+
+&lt;p&gt;The solution described in the previous section has worked for us for quite a while, until very recently when our underlying Rust library grew bigger and we wanted to support more platforms, such as the recent M1, 32-bit ARM and s390x.&lt;/p&gt;
+
+&lt;p&gt;We realized that it’s a harder case quickly. Remember, our goal is to still be able to keep using the usual Go tools.&lt;/p&gt;
+
+&lt;p&gt;Some solutions that we’ve tried and and failed or we rejected include:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Downloading the library on demand per-platform. Go didn’t seem to provide a way to do it.&lt;/li&gt;
+  &lt;li&gt;See if there’s a way to remove the 500mb module size limit. We didn’t find a way with the usual Go tools, since it’s enforced on the client side.&lt;/li&gt;
+  &lt;li&gt;Reducing the library size. It’s possible, but not a long-term or scalable solution.&lt;/li&gt;
+  &lt;li&gt;Have users install the library through other means, such as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;apt&lt;/code&gt;, like other common libraries like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;openssl&lt;/code&gt;do. Possible, but significantly worse developer and user experience for our specific library.&lt;/li&gt;
+  &lt;li&gt;Require developers who consumed the module go through a custom vendoring process. We didn’t even test this.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;So… now what?&lt;/p&gt;
+
+&lt;h1 id=&quot;big-friendly-giant&quot;&gt;Big friendly giant&lt;/h1&gt;
+
+&lt;p&gt;Having realized it’s not going to be an officially-described method or something that is widely employed, we embarked on creating our own.&lt;/p&gt;
+
+&lt;p&gt;Since our problem is with the library size when distributing all platforms, we first handled that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Distribute the per-platform libraries to packages, such as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;celo-bls-go-linux&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;celo-bls-go-macos&lt;/code&gt;, etc&lt;/li&gt;
+  &lt;li&gt;In each package, have a similar structure as described previously. Namely, a main source file and a per-platform source file that has the linking and build directives. This is only for the platforms supported in this package.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This is still not seamless to consumers, since they would have to choose which &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;celo-bls-go-PACKAGE&lt;/code&gt; to choose, depending on their platform.&lt;/p&gt;
+
+&lt;p&gt;We then introduce a main module, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;celo-bls-go&lt;/code&gt;, that has a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;router&lt;/code&gt; per package called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bls_PACKAGE.go&lt;/code&gt;:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It has an appropriate build directive, which is the union of the build directives of the platforms included in the package.&lt;/li&gt;
+  &lt;li&gt;It imports the correct package, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;celo-bls-go-PACKAGE&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;It has wrapper functions for all public functions, consts and vars in the package. For example:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;func HashDirectFirstStep(message []byte, hashBytes int32) ([]byte, error) {
+    return blsRoute.HashDirectFirstStep(message, hashBytes)
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To ease in creating this structure, that unfortunately includes a lot of similar code, we then introduced the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;distribute&lt;/code&gt;program that consumes source templates, router templates and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platforms.json&lt;/code&gt; and produces the per-package files. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platforms.json&lt;/code&gt; file looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-go&quot;&gt;{
+	&quot;linux&quot;: [{
+		&quot;name&quot;: &quot;linux_arm64&quot;,
+		&quot;buildDirective&quot;: &quot;linux,arm64&quot;,
+		&quot;linkageDirective&quot;: &quot;-L${SRCDIR}/../libs/aarch64-unknown-linux-gnu -lbls_snark_sys -ldl -lm&quot;,
+		&quot;libDirectories&quot;: [&quot;aarch64-unknown-linux-gnu&quot;]
+	}, ...
+  ],
+  &quot;macos&quot;: [{
+		&quot;name&quot;: &quot;darwin64&quot;,
+		&quot;buildDirective&quot;: &quot;darwin,amd64,!ios&quot;,
+		&quot;linkageDirective&quot;: &quot;-L${SRCDIR}/../libs/x86_64-apple-darwin -lbls_snark_sys -ldl -lm&quot;,
+		&quot;libDirectories&quot;: [&quot;x86_64-apple-darwin&quot;]
+	}, ...
+  ],
+  ...
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The code for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;distribute.go&lt;/code&gt;can be viewed here: &lt;a href=&quot;https://github.com/celo-org/celo-bls-go/blob/c0f37c3a9a6cfb448a152f785391efd42f03f895/cmd/distribute/distribute.go&quot;&gt;https://github.com/celo-org/celo-bls-go/blob/c0f37c3a9a6cfb448a152f785391efd42f03f895/cmd/distribute/distribute.go&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This is it!&lt;/p&gt;
+
+&lt;h2 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h2&gt;
+
+&lt;p&gt;The solution we described works reasonably well and achieves what we set out to achieve.&lt;/p&gt;
+
+&lt;p&gt;I imagine there’s a bunch of ways it could improved. One example is that we could use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;parser&lt;/code&gt; package to automatically derive the router rather than manually writing it.&lt;/p&gt;
+
+&lt;p&gt;I’d love to hear feedback and improvement suggestions!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">When your Go modules become too large.</summary></entry><entry><title type="html">StarDrop - anonymous rewards on StarkNet</title><link href="/2021/07/14/stardrop.html" rel="alternate" type="text/html" title="StarDrop - anonymous rewards on StarkNet" /><published>2021-07-14T00:00:00+03:00</published><updated>2021-07-14T00:00:00+03:00</updated><id>/2021/07/14/stardrop</id><content type="html" xml:base="/2021/07/14/stardrop.html">&lt;p&gt;This post is about an experimental project to distribute rewards in a privacy-preserving manner running on StarkNet.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
@@ -1458,108 +1605,4 @@ workbench.startTesting(['GoldPrice', 'GoldPriceChecker'], function(contracts) {
   &lt;li&gt;Then the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPriceChecker&lt;/code&gt; which calls the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract in its code sees the mocked value.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry><entry><title type="html">Additive Homomorphic Encryption on Ethereum</title><link href="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html" rel="alternate" type="text/html" title="Additive Homomorphic Encryption on Ethereum" /><published>2016-04-10T00:00:00+03:00</published><updated>2016-04-10T00:00:00+03:00</updated><id>/2016/04/10/additive-homomorphic-encryption-on-ethereum</id><content type="html" xml:base="/2016/04/10/additive-homomorphic-encryption-on-ethereum.html">&lt;p&gt;A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.&lt;/p&gt;
-
-&lt;p&gt;OK, let’s be serious - private blockchains are in the exploration phase. Financial institutions, insurance firms and many others are finding out how they can use the technology, or at least some of its concepts. One way to look at them is as a specialized database for specific use-cases. Projects like &lt;a href=&quot;https://www.hyperledger.org/&quot; target=&quot;_blank&quot;&gt;HyperLedger&lt;/a&gt; and &lt;a href=&quot;http://r3cev.com/blog/2016/4/4/introducing-r3-corda-a-distributed-ledger-designed-for-financial-services&quot; target=&quot;_blank&quot;&gt;Corda&lt;/a&gt; build infrastructures that will power some use-cases.&lt;/p&gt;
-
-&lt;p&gt;But today I’d like to discuss something a bit different. For quite some time, I’ve been interested in privacy on the blockchain. How can we add some privacy properties to public transactions while still gaining benefit from the underlying blockchain (such as finality, limited auditing, etc)? There are a few interesting ideas, some of them are explored in Vitalik’s blog post about &lt;a href=&quot;https://blog.ethereum.org/2016/01/15/privacy-on-the-blockchain/&quot; target=&quot;_blank&quot;&gt;Privacy on the Blockchain&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;#So, what can we do?
-One approach which I wanted to explore is homomorphic encryption. From &lt;a href=&quot;https://en.wikipedia.org/wiki/Homomorphic_encryption&quot; target=&quot;_blank&quot;&gt;Wikipedia&lt;/a&gt;:&lt;/p&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;Homomorphic encryption is a form of encryption that allows computations to be carried out on ciphertext, thus generating an encrypted result which, when decrypted, matches the result of operations performed on the plaintext.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;For example, assuming \(ENC\) and \(DEC\) are our encryption and decryption functions respectively, we can have:&lt;/p&gt;
-
-\[x\_1=3, x\_2=4 \\\\ 
-c\_1 = ENC(x\_1), c\_2 = ENC(x\_2) \\\\
-c\_3 = F(c\_1, c\_2) \\\\
- \text{ such that} \\\\
-x\_3 = DEC(c\_3) = x\_1 + x\_2\]
-
-&lt;p&gt;By performing an operation on the encrypted \(x_1, x_2\) we got their sum.&lt;/p&gt;
-
-&lt;p&gt;The “holy grail” of homomorphic encryption is &lt;a href=&quot;https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption&quot; target=&quot;_blank&quot;&gt;Fully Homomorphic Encryption&lt;/a&gt;, with which you can get results of arbitrary computations on encrypted data, not just their sum or product. One cryptosystem which provides you with &lt;em&gt;additive&lt;/em&gt; homomorphic encryption is the &lt;a href=&quot;https://en.wikipedia.org/wiki/Paillier_cryptosystem&quot; target=&quot;_blank&quot;&gt;Paillier Cryptosystem&lt;/a&gt;. Additive here means that you can get the sum of two encrypted numbers.&lt;/p&gt;
-
-&lt;p&gt;The Paillier Cryptosystem is an asymmetric encryption scheme, meaning that you encrypt with your public key and decrypt with your private key. Leaving the key generation process aside, the parameters we need to use the cryptosystem are:
-\(\\text{public key} = (n, g) \\\\
-\\text{private key} = (\lambda, \mu)\)
-The specific meaning of the parameters is not needed for what I want to show, and they’re all the result of the key generation process.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Encryption process&lt;/strong&gt;:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Take \(m\), the number you want to encrypt. \(m\) is a member of \(\mathbb{Z}_n\).&lt;/li&gt;
-  &lt;li&gt;Generate a random number \(r\).&lt;/li&gt;
-  &lt;li&gt;The encrypted number will be \(c = g^m \cdot r^n \mod n^2\).&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;strong&gt;Decryption process&lt;/strong&gt;:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Take \(c\), the encrypted number, which is in \(\mathbb{Z}^*_{n^2}\).&lt;/li&gt;
-  &lt;li&gt;The decrypted number will be \(m = \frac{(c^{\lambda} \mod n^2) - 1}{n} \cdot \mu \mod n\).&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;What we’re interested in now is the homomorphic addition property:
-\(DEC(ENC(m\_1) \cdot ENC(m\_2)) = m\_1 + m\_2\)&lt;/p&gt;
-
-&lt;p&gt;#Homomorphic Encryption in Practice
-So what does that property give us? Let’s look at a specific use case. Let’s assume we have an Ethereum smart contract that manages the expenses of employees:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Every day, employees submit their expenses to the contract. They don’t wan the other employees to know their expenses, so they encrypt it and send it to the contract.&lt;/li&gt;
-  &lt;li&gt;The contract adds the encrypted expense to the current total expenses amount.&lt;/li&gt;
-  &lt;li&gt;At the end of every month, the company wants to know the total expenses amount, but doesn’t want anyone else to know it. They take the encrypted total expenses amount from the contract and decrypt it locally.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;This would be a contract with my pre-generated parameters and an initial encrypted total expenses amount of 3:&lt;/p&gt;
-&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;paillierBalance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;                
-    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x2a6a2efecccf5f09e883b87528104e505dedb63fee8de93ccc059116bf32ae5f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;g&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb033814c46b1c673d80ad171adbcf4bc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;   
-    &lt;span class=&quot;nx&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb033814c46b1c673d80ad171adbcf4bb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-      
-    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;paillierBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;                                      
-        &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;assembly&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_n&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nInner&lt;/span&gt;
-            &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                                 
-    &lt;span class=&quot;nx&quot;&gt;modifier&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;onlyController&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sender&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;  
-        &lt;span class=&quot;nx&quot;&gt;_&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;homomorphicAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;onlyController&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;              
-        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredInner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;              
-        &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;                                          
-        &lt;span class=&quot;nx&quot;&gt;assembly&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedBalance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceInner&lt;/span&gt;                  
-            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedChange&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedChange&lt;/span&gt;             
-            &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_nSquared&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nSquaredInner&lt;/span&gt;                  
-            &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mulmod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_encryptedBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;_encryptedChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_nSquared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;encryptedBalance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;encryptedBalanceTemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;                            
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The encryption and decryption would be client side, using a &lt;a href=&quot;https://github.com/kobigurk/paillier&quot; target=&quot;_blank&quot;&gt;python paillier library&lt;/a&gt;. That means that the company first encrypts the initial balance, and whenever the employees want to report the expense, they use the &lt;strong&gt;homomorphicAdd&lt;/strong&gt; function. This function uses the homomorphic addition property to store the result of the sum of the previous balance and the new expense.&lt;/p&gt;
-
-&lt;p&gt;In this manner, the contract has only one storage variable for the balance while employees can report an unlimited number of expenses.&lt;/p&gt;
-
-&lt;p&gt;#Conclusion
-To summarize, this shows a method with which we can preserve privacy while still have some auditing properties. In this example, people can know that they can trust that the final encrypted balance represents the sum of all of the expenses reliably.&lt;/p&gt;
-
-&lt;p&gt;What kind of businesses would use methods like this? Time will tell. This is the moment that companies can be creative and find out new ways to architect their systems to work in a more transparent and efficient world.&lt;/p&gt;
-
-&lt;p&gt;All in all, I feel there is a great potential in using this kind of methods and I would love to discuss ideas. Feel free to &lt;a href=&quot;/contact.html&quot;&gt;contact me&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">A few months ago, the narrative in the cryptocurrency world changed from bitcoin to blockchain. Suddenly, bitcoin is old news and private blockchains are here to change the world. Apparently, blockchain is turning the financial world upside down.</summary></entry></feed>
+&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry></feed>
