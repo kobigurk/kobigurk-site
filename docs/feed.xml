@@ -1,4 +1,126 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-08-22T18:30:55+03:00</updated><id>/feed.xml</id><entry><title type="html">Cross platform Go modules for giants</title><link href="/2021/08/22/cross-platform-go-modules-for-giants.html" rel="alternate" type="text/html" title="Cross platform Go modules for giants" /><published>2021-08-22T00:00:00+03:00</published><updated>2021-08-22T00:00:00+03:00</updated><id>/2021/08/22/cross-platform-go-modules-for-giants</id><content type="html" xml:base="/2021/08/22/cross-platform-go-modules-for-giants.html">&lt;p&gt;When your Go modules become too large.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-10-31T00:40:54+03:00</updated><id>/feed.xml</id><entry><title type="html">Random Oracles in Cryptography</title><link href="/2021/10/31/random-oracles.html" rel="alternate" type="text/html" title="Random Oracles in Cryptography" /><published>2021-10-31T00:00:00+03:00</published><updated>2021-10-31T00:00:00+03:00</updated><id>/2021/10/31/random-oracles</id><content type="html" xml:base="/2021/10/31/random-oracles.html">&lt;p&gt;The post is co-authored with &lt;a href=&quot;https://twitter.com/tomwaltonpocock&quot; target=&quot;_blank&quot;&gt;Tom&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;background&quot;&gt;Background&lt;/h1&gt;
+
+&lt;p&gt;This article describes the role and sources of randomness in cryptographic protocols. It is a little-understood area by newcomers to the discipline.&lt;/p&gt;
+
+&lt;p&gt;Randomness is ubiquitous across the cryptography underpinning blockchain infrastructures — in the Merkle trees securing state, in the random-selection mechanism in proof of work, in the selection of committees in proof of stake, and in the zero knowledge proofs underpinning both scaling and privacy.&lt;/p&gt;
+
+&lt;p&gt;Hash functions are the most important source of randomness in these protocols.&lt;/p&gt;
+
+&lt;h1 id=&quot;whats-a-hash-function&quot;&gt;What’s a Hash Function?&lt;/h1&gt;
+
+&lt;p&gt;A hash function takes in a ‘message’ (this could be any data — the state of a blockchain, the contents of a transaction, etc) and ‘spits out’ a digest of a fixed length, in some predefined ‘space’ of numbers. This could be all numbers up to \(2^{256}\), or it could be elements of a prime field (common in zero knowledge proofs), or even sometimes elliptic curve points, which are numbers of a different kind.&lt;/p&gt;
+
+&lt;p&gt;The point is, the ‘magnitude’ of the output given the input should be completely unpredictable, until the hash is actually computed.&lt;/p&gt;
+
+&lt;p&gt;Hashes are typically seen in two settings:&lt;/p&gt;
+
+&lt;p&gt;As a short  ‘unique fingerprint’ on data (typically the ‘state’ of the blockchain, or the contents of a transaction), and&lt;/p&gt;
+
+&lt;p&gt;A way of replacing questions that should be supplied by the verifier in certain ‘interactive protocols’. This is a common feature of zero knowledge proofs. The security of interactive protocols depends on a sequence of questions and answers between the ‘verifier’ and the ‘prover’. Hashes can be used to remove the need for a direct back-and-forth dialogue between the prover (usually the spender of money) and the verifier (the blockchain nodes checking all transactions are correct)&lt;/p&gt;
+
+&lt;h1 id=&quot;property-1-for-hashes-randomness&quot;&gt;Property #1 for Hashes: Randomness&lt;/h1&gt;
+
+&lt;p&gt;A core property of hash functions is therefore they scramble input data in a seemingly random fashion. When new hash functions are proposed, they must be subjected to rigorous statistical tests to satisfy the cryptography community that they do indeed exhibit their claimed randomness. Any failure to do so would produce features that expose protocols relying on them to potential attack.&lt;/p&gt;
+
+&lt;p&gt;This randomness is useful in many contexts.&lt;/p&gt;
+
+&lt;p&gt;Pseudorandom Function Families (PRFs) are functions that, similar to hash functions, map a message to an output, but additionally have a key as an input. PRFs can be built from these random-looking hashes, and, for example, can be used to build message authentication codes, to protect message authenticity and integrity. These hashes can also help when converting interactive proofs to non-interactive. If during the interactive proof a verifier sends uniformly random elements to the prover as challenges, the Fiat-Shamir heuristic can use a hash to replace the interactive random challenge with a hash of the proving process messages so far, as this should produce a sufficient random element for this purpose.&lt;/p&gt;
+
+&lt;h1 id=&quot;property-2-for-hashes-collision-resistance&quot;&gt;Property #2 for Hashes: Collision Resistance&lt;/h1&gt;
+
+&lt;p&gt;Additionally, we want it to be the following:&lt;/p&gt;
+
+&lt;p&gt;Collision-resistant - hard to find two different messages that produce the same result&lt;/p&gt;
+
+&lt;p&gt;Pre-image resistant - given an output, hard to find an input that produces it&lt;/p&gt;
+
+&lt;p&gt;Second pre-image resistant - given an input and output, hard to find another input that produces the same output&lt;/p&gt;
+
+&lt;p&gt;The desire for collision-resistance is direct - if we digest two different messages into the same hash, we can’t distinguish them anymore. Therefore, we want the short hash digest to be as unique as possible for different messages, in the sense that we can’t maliciously craft messages that have the same hash.  As a rule of thumb, collision resistance is usually easier to attack than pre-image resistance. This is because in collision resistance you have the freedom to choose any two inputs, where in both variants of pre-image resistance you are restricted to a specific output. Birthday attacks immediately reduce the complexity of finding a collision to a square root of the amount of possible outputs. Generally, when a collision is found, it’s a strong signal hash function should be phased out, as it signals worse attacks may happen.&lt;/p&gt;
+
+&lt;p&gt;Another common place where it appears is some signature schemes: in Schnorr signatures we require a “hash to field” and in BLS signatures we require a “hash to group”. In both cases, this hash provides us with a unique element from the target set that is unrelated to other results of the hash. For example, we don’t want it to be the case that if you call the hash function \(H\) on \(m_1\) and \(m_2\), then you can also somehow deduce \(H(m_3)\).&lt;/p&gt;
+
+&lt;h1 id=&quot;provable-security-and-the-standard-model&quot;&gt;Provable Security and the “Standard Model”&lt;/h1&gt;
+
+&lt;p&gt;Hashes, then, sound super useful! What’s the problem?&lt;/p&gt;
+
+&lt;p&gt;While useful for protocol designers, introducing hash functions to protocols makes life hard for cryptographers, when they approach proving security for the protocols. Cryptographers like to work with reductions - you formulate a security property for your protocol, and show that if that security property is broken by an adversary, then it implies that we also solved an unsolvable problem, an assumption.&lt;/p&gt;
+
+&lt;p&gt;Proving security of protocols using computational hardness assumptions is considered working within the Standard Model. This means that you assume some problems are hard, and try to prove that your protocol’s security properties can be explained to be as hard as this problem. One such problem that is widely known is the Discrete Logarithm problem in a group: given \(g\) and \(h\), find \(x\) such that \(g^x = h\). If someone wants to break your protocol’s security properties, and you prove that in order to break it you would have to find a Discrete Logarithm, then you’re in a really good shape.&lt;/p&gt;
+
+&lt;p&gt;A concrete example is the case of ElGamal encryption, where we have the IND-CPA property that roughly states that even if you know a ciphertexts is an encryption of one of a set of plaintexts you’ve chosen, you will not be able to know which of the plaintexts was chosen. The assumption that is solved if that property is broken is DDH - Decisional Diffie Hellman, that states that \((g^x, g^y, g^{xy})\) is indistinguishable from \((g^x, g^y, g^z)\), given random \(x,y,z\) and a group generator \(g\).&lt;/p&gt;
+
+&lt;p&gt;Hashes throw a wrench into that and constrain the ability of cryptographers to make such reductions, and without an alternative modeling of the protocol, we would be left with “we’ve tried to break this protocol for some time and couldn’t”, which feels unsatisfactory.&lt;/p&gt;
+
+&lt;h1 id=&quot;random-oracles-to-the-rescue&quot;&gt;Random Oracles to the Rescue&lt;/h1&gt;
+
+&lt;p&gt;Random oracles can solve this.&lt;/p&gt;
+
+&lt;p&gt;They provide a way to do a security-reduction proof, to gain confidence in the security of the protocol. When working within the Random Oracle Model, we replace each hash functions with an idealized Random Oracle:&lt;/p&gt;
+
+&lt;p&gt;When a query is made on a new message, a random response from the target set is returned, chosen uniformly from it.&lt;/p&gt;
+
+&lt;p&gt;When a query on a message that has been queried on before, the same response as before is returned.&lt;/p&gt;
+
+&lt;h1 id=&quot;programmable-random-oracles&quot;&gt;“Programmable” Random Oracles&lt;/h1&gt;
+
+&lt;p&gt;This introduces the concept of programmable random oracles, in which we allow some of the participants to program it — return values of its choosing, as long as they appear random to the receiver. It may sounds a bit weird, since the functions we would use in reality don’t have that feature. Given that it allows cryptographers provide positive results on the security of some protocols and that the consumer of oracle doesn’t see the difference, as they still see random values, it seems like a reasonable trade-off to make.&lt;/p&gt;
+
+&lt;p&gt;Specifically, we can allow an adversary that wants to break an assumption, let’s say DDH, to simulate the environment of another adversary that claims they know to break a security property of the protocol.&lt;/p&gt;
+
+&lt;p&gt;By programming the random oracle, we can use the responses from the adversary whose environment to then break the assumption.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/random-oracle.png&quot; alt=&quot;random-oracle&quot; style=&quot;width: 100%&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are a few other different variants, providing different levels of confidence - for example, non-programmable random oracles.&lt;/p&gt;
+
+&lt;h1 id=&quot;its-not-all-roses&quot;&gt;It’s not all Roses&lt;/h1&gt;
+
+&lt;p&gt;Alright, this sounds really powerful. What’s the catch? The catch is that random oracles don’t really exist. Good hashes only approximately behave like them.&lt;/p&gt;
+
+&lt;p&gt;Take one of the most famous hashes — SHA-256. Try inputting a few numbers, SHA(1), SHA(2), etc. Run a few statistical tests to see in which ‘regions’ of the number grid \(2^{256}\) looks random.&lt;/p&gt;
+
+&lt;p&gt;But true random functions don’t exist, almost by definition — a function is algorithmic, deterministic. Even worse, since random oracles don’t really exist, there are pathological examples where a scheme is proven to be secure in the random oracle model but is insecure when instantiated with any hash function.&lt;/p&gt;
+
+&lt;p&gt;So is this at all useful? It gives a bit of confidence and it helps catching bad protocol design mistakes in other parts of the protocol. The intuition is that if your hash function behaves like a random oracle, then the proof somewhat applies to it. If it doesn’t, then the proof doesn’t even patter. It’s also sometimes the best we can get for some protocols, so it’s much better than nothing.&lt;/p&gt;
+
+&lt;p&gt;You may also wonder - what are good instantiations of random oracles? When the source and target spaces are just sequences of bytes, they can more easily be built directly from known hash functions, like SHA256. When we’re talking about prime fields and elliptic curve groups it’s harder and there are many pitfalls on the way.&lt;/p&gt;
+
+&lt;h1 id=&quot;whats-next&quot;&gt;What’s Next?&lt;/h1&gt;
+
+&lt;p&gt;If you’re curious to see how programmable random oracles can be used to prove security for the famous BLS signature scheme, read the appendix!&lt;/p&gt;
+
+&lt;p&gt;Lastly, if you want to try to break a protocol which uses a subtly bad instantiation of a random oracle, check out the first puzzle of zkhack :)&lt;/p&gt;
+
+&lt;h1 id=&quot;appendix&quot;&gt;Appendix&lt;/h1&gt;
+
+&lt;h2 id=&quot;bls-security-proof&quot;&gt;BLS security proof&lt;/h2&gt;
+
+&lt;p&gt;Let’s look at a shortened version of a concrete example, BLS signatures (if you need some background on BLS signatures, I recommend reading this:&lt;/p&gt;
+
+&lt;p&gt;Assumption - co-CDH: Given \(g_1^a \in \mathbb{G}_1\), \(g_2^a \in \mathbb{G}_2\) and \(h \in \mathbb{G}_2\), computing \(h^a \in \mathbb{G}_2\) is hard. We are given \(g,g^a,h\) as a challenge.&lt;/p&gt;
+
+&lt;p&gt;Security property - Existential Unforgability, roughly stating that given a public key \(pk\), even if you see a bunch of signatures on different messages, you will not be able to forge a signature on another message without access to the secret key.&lt;/p&gt;
+
+&lt;p&gt;Proof method sketch:&lt;/p&gt;
+
+&lt;p&gt;We build an adversary \(A\) that breaks co-CDH.&lt;/p&gt;
+
+&lt;p&gt;The adversary \(F\) who claims they break Existential Unforgability is given a public key \(pk=g^a \in \mathbb{G}_1\), the same one that is received in the challenge where both \(A\) and \(F\) don’t know \(a\), and makes a few random oracle queries while they’re still in the first phase of getting signatures on different messages. They also make signature queries. We know that they will make more random oracle queries than signature queries, since they have a phase where they request signatures, which implies both a random oracle query and a signaturequery , and a phase where they forge a signature, which means they query the random oracle but don’t request a signature.&lt;/p&gt;
+
+&lt;p&gt;We guess beforehand an index of a message where \(F\) queries the random oracle but does not request a signature. This would also be the message for which \(F\) forges a signature.&lt;/p&gt;
+
+&lt;p&gt;In those queries where both a random oracle is queries and a signature is requested, we have to provide answers that would pass the BLS verification check \(e(pk, H(m)) = e(g_1, \sigma)\) and also look random. We choose a random \(r\), and compute \(H(m) = g_2^r, \sigma = (g_2^a)^r\), Note that we can do that without knowing \(a\) and this still passes the verification check.&lt;/p&gt;
+
+&lt;p&gt;In the query where \(F\) only queries the random oracle, we embed the rest of the challenge that we got: \(H(m) = g_2^r \cdot h\). Note that for this case we couldn’t compute \(\sigma\) if we were requested - since we don’t know the entire exponent, it’s not only \(r\) anymore. Also note that this still appears random since \(h^r\) appears random.&lt;/p&gt;
+
+&lt;p&gt;Since \(F\) knows to forge a signature \(\sigma\) that satisfies \(e(pk,H(m)) = e(g_1, \sigma) \Rightarrow e(g_1^a, g_2^r \cdot h) = e(g_q, \sigma)\), we have that \(\sigma = (g_2^r \cdot h)^a\). Taking \(\frac{\sigma}{(g_2^a)^r}\), we get \(h^a\) as desired!&lt;/p&gt;
+
+&lt;h2 id=&quot;broken-hash-to-curve&quot;&gt;Broken hash-to-curve&lt;/h2&gt;
+
+&lt;p&gt;Recall that we’re looking for a hash that takes a mesage and gives a group element. One particular example I’ve seen in the wild which is broken is doing it in two steps: hash to field \(H(m)\) and then multiply by the generator \(g_2^{H(m)}\). This is broken since given a signature, being \(g_2^{H(m)x}\), where \(x\) is the secret key, we can transform it into a signature for \(m’\) without knowing \(x\), by doing \((g_2^{H(m)x})^{H(m)^{-1}H(m')} = g_2^{H(m')x}\).&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">The post is co-authored with Tom.</summary></entry><entry><title type="html">Cross platform Go modules for giants</title><link href="/2021/08/22/cross-platform-go-modules-for-giants.html" rel="alternate" type="text/html" title="Cross platform Go modules for giants" /><published>2021-08-22T00:00:00+03:00</published><updated>2021-08-22T00:00:00+03:00</updated><id>/2021/08/22/cross-platform-go-modules-for-giants</id><content type="html" xml:base="/2021/08/22/cross-platform-go-modules-for-giants.html">&lt;p&gt;When your Go modules become too large.&lt;/p&gt;
 
 &lt;h1 id=&quot;tldr&quot;&gt;Tl;dr&lt;/h1&gt;
 
@@ -1261,352 +1383,4 @@ Good question. It’s always an interactive game - put a barrier, hackers get th
 &lt;p&gt;#To summarize…
 Link previews are nice and fun, but may also be used as a convenient tool to improve phishing campaigns considerably. I believe there are solutions to make it better and some platforms are realizing this and taking steps, but there’s more work to do.&lt;/p&gt;
 
-&lt;p&gt;Hopefully we can combine the easiness and convenience with security!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.</summary></entry><entry><title type="html">Mocking Ethereum contracts</title><link href="/2016/09/24/mocking-ethereum-contracts.html" rel="alternate" type="text/html" title="Mocking Ethereum contracts" /><published>2016-09-24T00:00:00+03:00</published><updated>2016-09-24T00:00:00+03:00</updated><id>/2016/09/24/mocking-ethereum-contracts</id><content type="html" xml:base="/2016/09/24/mocking-ethereum-contracts.html">&lt;p&gt;Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.&lt;/p&gt;
-
-&lt;p&gt;For node.js, for example, we have Mocha as a testing framework a Sinon.JS as a mocking framework. This is a code example that shows the usage of these two together:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
-var sinon = require('sinon');
-                                                                                                                                                                                                                                                                                                                                                                           
-it(&quot;returns the return value from the original function&quot;, function () {
-  var myAPI = {
-    method: function () {
-      return 5;
-    }
-  };
-  var mock = sinon.mock(myAPI);
-  mock.expects(&quot;method&quot;).returns(42);
-
-  var result = myAPI.method();
-  assert.equal(result, 42);
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In this example, you take a function, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt;, that usually returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;, and make it return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;42&lt;/code&gt;. This is useful when you want to see how your code behaves when, for example, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;result&lt;/code&gt; is larger than &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;30&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;A more complex example would be:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
-var sinon = require('sinon');
-                                                                                                                                                                                                                                                                                                                                                                           
-function once(fn) {
-  var returnValue, called = false;
-  return function () {
-      if (!called) {
-        called = true;
-          returnValue = fn.apply(this, arguments);
-      }
-      return returnValue;
-  };
-}
-
-it(&quot;returns the return value from the original function&quot;, function () {
-  var myAPI = { 
-    method: function () {
-      return 5;
-    } 
-  };
-  var mock = sinon.mock(myAPI);
-  mock.expects(&quot;method&quot;).returns(42);
-
-  var proxy = once(myAPI.method);
-
-  assert.equals(proxy(), 42);
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In this example, we don’t call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myAPI.method&lt;/code&gt; directly. Instead, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;once&lt;/code&gt; calls it. So although we didn’t call it directly, the method was still mocked and returned &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;42&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h1 id=&quot;testing-in-ethereum&quot;&gt;Testing in Ethereum&lt;/h1&gt;
-&lt;p&gt;&lt;a href=&quot;https://live.ether.camp/&quot; target=&quot;_blank&quot;&gt;Ether.camp&lt;/a&gt; has been working on a pretty cool testing framework, utilizing the sandbox they developed for the excellent IDE, &lt;strong&gt;Ethereum Studio&lt;/strong&gt;. You can see examples of it &lt;a href=&quot;https://github.com/ether-camp/ethereum-testing-reference&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Let’s look at a specific example. Let’s say you wrote this simple math performing contract, &lt;strong&gt;Math.sol&lt;/strong&gt;, using Solidity:&lt;/p&gt;
-&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Math&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
-    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mul&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
-    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	
-  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
-    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-  &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	    
-    &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;A simple test case would be:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
-
-var Workbench = require('ethereum-sandbox-workbench');
-var workbench = new Workbench({
-  defaults: {
-    from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
-  }
-});
-var sandbox = workbench.sandbox;
-
-workbench.startTesting('Math', function(contracts) {
-  it('sum-test', function() {
-    return contracts.Math.new()
-    .then(function(contract) {
-      return contract.sum(2,2);
-    })
-    .then(function (txHash) {
-      return workbench.waitForSandboxReceipt(txHash);
-    })
-    .then(function (receipt) {
-      var result = sandbox.web3.toBigNumber(receipt.returnValue).toNumber();
-      assert.equal(result, 4);
-      assert.notEqual(result, 5);
-    });
-  });
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This test case does the following:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Start a configured sandbox environment to which contracts can be deployed.&lt;/li&gt;
-  &lt;li&gt;Deploys the &lt;strong&gt;Math&lt;/strong&gt; contract to the sandbox.&lt;/li&gt;
-  &lt;li&gt;Checks that addition actually works correctly in Ethereum. If you run this test case with Mocha, you’ll be sure to see it does!&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;You probably noticed that after calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startTesting&lt;/code&gt; we have access to the compiled contracts with an easy-to-use, promise based, interface. This is thanks to &lt;a href=&quot;https://github.com/ConsenSys/ether-pudding&quot; target=&quot;_blank&quot;&gt;Ether Pudding&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h1 id=&quot;mocking-in-ethereum&quot;&gt;Mocking in Ethereum&lt;/h1&gt;
-&lt;p&gt;But what about mocking? When you’re testing Ethereum contracts, it’s more than a matter of modifying javascript functions. Ethereum contracts are pieces of code living on the Ethereum blockchain, accessible by sending transactions or calling their address.&lt;/p&gt;
-
-&lt;p&gt;For example, let’s look at the following contract:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {function GoldPrice(); function price() constant returns(uint256 ); function notifyCallback(); function getPriceWithParameter(uint input) returns(uint);}
-
-contract GoldPriceChecker {
-  function GoldPriceChecker(address goldPriceContractAddress) {
-    goldPriceContract = goldPriceContractAddress;
-  }
-
-  function getGoldPriceHappinessMeter() returns (uint) {
-    uint feedPrice = GoldPrice(goldPriceContract).price();
-    if (feedPrice &amp;gt; 200) {
-      return 1;
-    } else {
-      return 2;
-    }
-  }
-
-  address goldPriceContract;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This contract checks the price of gold and returns a “happiness meter” depending on the price. It depends on a &lt;strong&gt;GoldPrice&lt;/strong&gt; contract, of which’s address is provided in our contract’s constructor. The interface of the &lt;strong&gt;GoldPrice&lt;/strong&gt; contract is:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract GoldPrice {
-  function GoldPrice(); 
-  function price() constant returns(uint256); 
-  function notifyCallback(); 
-  function getPriceWithParameter(uint input) returns(uint);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This means that if we were to mock an Ethereum contract, we would want an entity living on the blockchain that will respond instead of the mocked contract, but still adhering to the same interface.&lt;/p&gt;
-
-&lt;h1 id=&quot;enter-proxy-contract&quot;&gt;Enter proxy contract&lt;/h1&gt;
-&lt;p&gt;A solution for this may be fulfilled a contract providing the following features:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Can be accessed with the same interface of the mocked contract.&lt;/li&gt;
-  &lt;li&gt;Can be configured with desired responses to calls to mocked functions.&lt;/li&gt;
-  &lt;li&gt;Can be configured with desired follow-up transactions to mocked functions.&lt;/li&gt;
-  &lt;li&gt;Can notify when a mocked contract function was called.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;In order to understand how to create such a contract, we need to understand how transactions and calls in Ethereum work.&lt;/p&gt;
-
-&lt;h1 id=&quot;ethereum-contract-abi&quot;&gt;Ethereum Contract ABI&lt;/h1&gt;
-&lt;p&gt;Let’s say we want to call the Solidity function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;getPriceWithParameter&lt;/code&gt; with the parameter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt;. According to the &lt;a href=&quot;https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI&quot; target=&quot;_blank&quot;&gt;Ethereum Contract ABI&lt;/a&gt;, we first calculate the Method ID: first 4 bytes of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sha3(&quot;getPriceWithParameter(uint256)&quot;)&lt;/code&gt;. In our case, it would be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x60360e31&lt;/code&gt;. Then, we encode the parameters. In our case, it would be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x0000000000000000000000000000000000000000000000000000000000000005&lt;/code&gt;.  Then, we concatenate them.&lt;/p&gt;
-
-&lt;p&gt;Ether Pudding and web3 provide us with easy-to-use javascript wrapper to do all of this automatically. That means that if we have an Ether Pudding instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt; which was deployed at address &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xabcdefababcdefababcdefababcdefababcdefab&lt;/code&gt;, then calling the following:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;goldPrice.getPriceWithParaemeter(5, {
-  from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826'
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;is equivalent to:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;web3.eth.call({
-  from: '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826',
-  to: '0xabcdefababcdefababcdefababcdefababcdefab',
-  data: '0x60360e310000000000000000000000000000000000000000000000000000000000000005'
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In the Solidity code of the contract iself, it’s possible to access the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;data&lt;/code&gt; using the globally available &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;, which is of type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt;, and the method ID using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;, which is of type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes4&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h1 id=&quot;proxy-contract&quot;&gt;Proxy contract&lt;/h1&gt;
-&lt;p&gt;Without further ado, I present you the Proxy contract:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;contract Proxy {
-
-  bool _traceFunctionCalls = false;
-  event Trace(address caller, bytes data, uint value);
-
-  function Proxy(bool traceFunctionCalls) {
-    _traceFunctionCalls = traceFunctionCalls;
-  }
-
-  function setMock(bytes4 method, uint8 operationType, address target, bytes data) {
-    operations[method] = Operation(operationType, target, data);
-  }
-
-  function setMockWithArgs(bytes methodWithData, uint8 operationType, address target, bytes data) {
-    operationsWithArgs[methodWithData] = Operation(operationType, target, data);
-  }
-
-  function() {
-    if (_traceFunctionCalls) {
-      Trace(msg.sender, msg.data, msg.value);
-    }
-    Operation memory operation = operationsWithArgs[msg.data];
-    uint8 operationType = operation.operationType;
-    if (operationType == 0) {
-      operation = operations[msg.sig];
-      operationType = operation.operationType;
-      if (operationType == 0) {
-        throw;
-      }
-    } 
-
-    if (operationType == 1) {
-      address target = operation.target;
-      target.call(operation.data);
-    } else if (operationType == 2) {
-      bytes memory data = operation.data;
-      assembly {
-        return(add(data, 32), mload(data))
-      }
-    } else {
-      throw;
-    }
-  }
-
-  struct Operation {
-    uint8 operationType;
-    address target;
-    bytes data;
-  }
-
-  mapping (bytes4 =&amp;gt; Operation) operations;
-  mapping (bytes =&amp;gt; Operation) operationsWithArgs;
-
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As can be seen in the contract code, it has three functions:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMockWithArgs&lt;/code&gt; that allows you to set return values or a follow-up transaction when invoking the contract with the specified method ID + arguments (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;Fallback function (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;function () {}&lt;/code&gt;) that is called when invoked with neither of the previous ones. The fallback function checks if a mock has been configured and acts accordingly.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The way the proxy contract works for mocking is by pointing the Ether Pudding interface of the mocked contract, i.e. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the address of a deployed proxy contract. Then, when functions are invoked on that instance, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; of the resulting call will be an attempt to invoke the function of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract on the proxy contract itself.&lt;/p&gt;
-
-&lt;p&gt;Let’s look at a concrete example. Let’s assume we’ve deployed the proxy contract. Then, we invoked &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock&lt;/code&gt; with the following arguments: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMock(0x60360e31, 2, 0x0, 0x0000000000000000000000000000000000000000000000000000000000000005)&lt;/code&gt;. In other words, we’ve configured the proxy contract to return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;5&lt;/code&gt; when called with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sig&lt;/code&gt; of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x6036e31&lt;/code&gt;. By pointing the Ether Pudding interface of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; at the deployed proxy contract, the resulting object being &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice&lt;/code&gt;, this is equivalent to calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPrice.getPriceWithParameter&lt;/code&gt; with any parameter.&lt;/p&gt;
-
-&lt;p&gt;Before I’ll show you how to use it in the mocking framework, I want to point you to the following part in the proxy contract:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bytes memory data = operation.data;
-assembly {
-  return(add(data, 32), mload(data))
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;There’s a bit of inline assembly here. This is required because we want to be able to return any type of value from the contract. That means that we don’t want to limit ourselves to being able to make only functions that return, i.e., &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uint256&lt;/code&gt;. By using inline assembly and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode, we are able force the contract to return with the bytes saved when the mock was configured.&lt;/p&gt;
-
-&lt;p&gt;To understand how this works, we should look at how a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt; variable is stored in memory - first the number of bytes in the array padded to 32 bytes and then the data itself.&lt;/p&gt;
-
-&lt;p&gt;The quoted code segment does the following:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Copies &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;operation.data&lt;/code&gt; from storage to memory, by using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;memory&lt;/code&gt; keyword. This is needed, because the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return&lt;/code&gt; opcode returns from memory.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mload&lt;/code&gt; loads the first 32 bytes of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;data&lt;/code&gt; variables. This would be the length of the array.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;add(data, 32)&lt;/code&gt; is the address of the actual data in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes&lt;/code&gt; array.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return(p,s)&lt;/code&gt; itself terminates the contract execution and returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;s&lt;/code&gt; bytes of data starting  in memory address &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;p&lt;/code&gt;.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;To learn more about in-line assembly, check out the &lt;a href=&quot;https://solidity.readthedocs.io/en/latest/control-structures.html#inline-assembly&quot; target=&quot;_blank&quot;&gt;Solidity documentation&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h1 id=&quot;mocking-framework&quot;&gt;Mocking framework&lt;/h1&gt;
-&lt;p&gt;To make life easy, we added the mocking framework to the &lt;a href=&quot;https://github.com/ether-camp/ethereum-sandbox-workbench&quot; target=&quot;_blank&quot;&gt;ethereum-sandbox-workbench&lt;/a&gt;. This is an example of working with it:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var assert = require('assert');
-var Workbench = require('ethereum-sandbox-workbench');
-
-var fromAddress = '0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826';
-var workbench = new Workbench({
-  defaults: {
-    from: fromAddress
-  }
-});
-
-var sandbox = workbench.sandbox;
-
-workbench.startTesting(['GoldPrice', 'GoldPriceChecker'], function(contracts) {
-  var goldPrice;
-  var mockContract;
-  var goldPriceChecker;
-
-  it('tests-deploy', function() {
-    return contracts.GoldPrice.new()
-    .then(function(contract) {
-      if (contract.address) {
-        goldPrice = contract;
-      } else {
-        throw new Error('No address for deployed contract');
-      }
-    });
-  });
-
-  it('tests-deploy-proxy', function() {
-    return contracts.GoldPrice.newMock({
-      traceFunctionCalls: true
-    })
-    .then(function(contract) {
-      mockContract = contract;
-      return mockContract.price.mockCallReturnValue(299);
-    })
-    .then(function(receipt) {
-      return mockContract.price.call();
-    })
-    .then(function(value) {
-      assert(value.equals(299));
-    });
-  });
-
-  it('tests-deploy-checker', function() {
-    return contracts.GoldPriceChecker.new(mockContract.address)
-    .then(function(contract) {
-      goldPriceChecker = contract;
-      return goldPriceChecker.getGoldPriceHappinessMeter.call();
-    })
-    .then(function(value) {
-      assert.equal(value.toString(), '1');
-      return mockContract.price.mockCallReturnValue(5);
-    })
-    .then(function(receipt) {
-      return goldPriceChecker.getGoldPriceHappinessMeter.call();
-    })
-    .then(function(value) {
-      assert.equal(value.toString(), '2');
-    });
-  });
-});
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Let’s recap what we see here:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;To deploy a proxy contract but have the interface of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract, we deploy using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;newMock&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;new&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;To set-up a new mock for a call return value, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockCallReturnValue&lt;/code&gt; on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;price&lt;/code&gt; function.&lt;/li&gt;
-  &lt;li&gt;Then the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;goldPriceChecker&lt;/code&gt; which calls the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoldPrice&lt;/code&gt; contract in its code sees the mocked value.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Similarly, you can mock a transaction response using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mockTransactionForward&lt;/code&gt; and trace function calls (making sure the functions were called in a specific transaction) using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wasCalled&lt;/code&gt; on the mocked function. To see examples of those, check out the &lt;a href=&quot;https://raw.githubusercontent.com/ether-camp/ethereum-testing-reference/master/test/mock/mock-test.js&quot; target=&quot;_blank&quot;&gt;test case&lt;/a&gt;!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Testing frameworks have become important for development processes. They allow us to instrument our code and make sure it handles different cases. Mocking frameworks make it even better - if you have dependencies on external factors, you can make your code believe those dependencies act in a specified way so you can check your code knows how to deal with the different responses. Additionally, as Alex and Roman mentioned in a chat we had, mocks can help you develop when you don’t have the dependency ready, i.e. when someone else develops it and haven’t finished.</summary></entry></feed>
+&lt;p&gt;Hopefully we can combine the easiness and convenience with security!&lt;/p&gt;</content><author><name>Kobi</name></author><summary type="html">Link previews are convenient. Implemented inside messaging platforms, they allow you to see the summary of a link a friend sent you without actually opening it, giving you the ability to decide whether it’s important or interesting enough to open it in a browser.</summary></entry></feed>
