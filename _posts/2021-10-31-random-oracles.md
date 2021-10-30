@@ -4,12 +4,12 @@ author: Kobi
 comments: true
 ---
 
+This article describes the role and sources of randomness in cryptographic protocols
+
 The post is co-authored with [Tom](https://twitter.com/tomwaltonpocock){:target="_blank"}.
 
 Background
 ==========
-
-This article describes the role and sources of randomness in cryptographic protocols. It is a little-understood area by newcomers to the discipline.
 
 Randomness is ubiquitous across the cryptography underpinning blockchain infrastructures — in the Merkle trees securing state, in the random-selection mechanism in proof of work, in the selection of committees in proof of stake, and in the zero knowledge proofs underpinning both scaling and privacy.
 
